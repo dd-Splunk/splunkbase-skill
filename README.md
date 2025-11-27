@@ -155,7 +155,7 @@ networks:
 **Request to Claude:**
 
 ```text
-Update my SPLUNK_APPS_URL with the latest versions of apps 4353 and 7931
+Update my SPLUNK_APPS_URL with the latest versions of apps 4353 and 7931.
 ```
 
 **Claude Response:**
