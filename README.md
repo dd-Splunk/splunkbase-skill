@@ -20,7 +20,9 @@ This skill enables Claude to:
 
 ### As a Claude Skill
 
-See: [Using Skills in Claude](https://support.claude.com/en/articles/12512180-using-skills-in-claude)
+1. Download the `splunkbase-skill.zip` file from the [latest GitHub release](https://github.com/dd-Splunk/splunkbase-skill/releases/tag/latest)
+2. Follow the instructions: [Using Skills in Claude](https://support.claude.com/en/articles/12512180-using-skills-in-claude)
+3. Extract and import the skill in your Claude workspace
 
 ### Python Implementation
 
