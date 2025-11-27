@@ -230,6 +230,46 @@ When generating Docker Compose configurations:
 - Consider platform architecture (`platform: linux/amd64` for M1/M2 Macs)
 - Include appropriate volumes for persistent data
 
+#### Exemple
+
+Request to Claude: Create a Docker Compose service for Splunk with apps 4353 and 7931
+
+Claude Response:
+
+```yaml
+services:
+  splunk:
+    hostname: splunk
+    container_name: splunk
+    image: splunk/splunk:latest
+    platform: linux/amd64
+    environment:
+      SPLUNK_GENERAL_TERMS: --accept-sgt-current-at-splunk-com
+      SPLUNK_START_ARGS: --accept-license
+      SPLUNK_PASSWORD: ${SPLUNK_PASSWORD}
+      SPLUNKBASE_USERNAME: ${SPLUNKBASE_USER}@splunk.com
+      SPLUNKBASE_PASSWORD: ${SPLUNKBASE_PASS}
+      SPLUNK_APPS_URL: https://splunkbase.splunk.com/app/4353/release/1.8.20/download/,https://splunkbase.splunk.com/app/7931/release/0.2.6/download/
+      TZ: ${TZ:-Europe/Brussels}
+    volumes:
+      - ./default.yml:/tmp/defaults/default.yml
+      - splunk-var:/opt/splunk/var
+      - splunk-etc:/opt/splunk/etc
+    ports:
+      - "8000:8000"
+      - "8089:8089"
+    networks:
+      - splunk
+    restart: always
+
+volumes:
+  splunk-var:
+  splunk-etc:
+
+networks:
+  splunk:
+```
+
 ### Security Considerations
 
 - Never hardcode Splunkbase credentials in the output
