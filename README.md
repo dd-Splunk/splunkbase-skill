@@ -263,4 +263,5 @@ This skill is provided as-is for use with Claude and Splunk deployments.
 
 ## Version
 
+**v1.1.0** - Enhanced features and improvements (2025-11-27)
 **v1.0.0** - Initial release (2025-11-27)
