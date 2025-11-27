@@ -1,6 +1,6 @@
 ---
 name: splunkbase-skill
-description: A Claude Skill for fetching the latest download URLs from Splunkbase applications. This skill is particularly useful when creating Docker Compose configurations for Splunk deployments.
+description: A Claude Skill for fetching the latest download URLs from Splunkbase applications. This skill is particularly useful when creating Docker Compose configurations for Splunk deployments
 ---
 # Splunkbase App URL Skill
 
