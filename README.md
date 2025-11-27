@@ -100,7 +100,10 @@ Get me the latest download URL for Splunkbase app 4353
 **Claude Response:**
 
 ```text
-https://splunkbase.splunk.com/app/4353/release/1.8.20/download/
+App: Config Explorer
+Version: 1.8.21
+Download URL: https://splunkbase.splunk.com/app/4353/release/1.8.21/download/
+This is the current latest release. If you need this for a Docker Compose SPLUNK_APPS_URL environment variable, you can use the URL directly.
 ```
 
 ### Example 2: Generate Docker Compose Configuration
