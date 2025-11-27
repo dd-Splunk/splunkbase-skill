@@ -27,7 +27,7 @@ jobs:
                   ls -lh splunkbase-skill.zip
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: splunkbase-skill-archive
                   path: splunkbase-skill.zip
