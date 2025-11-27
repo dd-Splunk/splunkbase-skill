@@ -31,6 +31,16 @@ jobs:
                   path: splunkbase-skill.zip
                   retention-days: 90
 
+            - name: Create tag
+              run: |
+                  TAG="release-$(date +%s)"
+                  git config user.name "github-actions"
+                  git config user.email "github-actions@github.com"
+                  git tag $TAG
+                  git push origin $TAG
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
             - name: Create Release
               uses: softprops/action-gh-release@v1
               with:
