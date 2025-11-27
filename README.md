@@ -111,7 +111,7 @@ https://splunkbase.splunk.com/app/4353/release/1.8.20/download/
 **Request to Claude:**
 
 ```text
-Create a Docker Compose service for Splunk with apps 4353 and 7931
+Create a Docker Compose service for Splunk with apps 4353 and 7931.
 ```
 
 **Claude Response:**
