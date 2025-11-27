@@ -20,13 +20,7 @@ This skill enables Claude to:
 
 ### As a Claude Skill
 
-1. Copy the `SKILL.md` file to your Claude Skills directory:
-
-   ```bash
-   cp splunkbase-skill/SKILL.md /mnt/skills/user/splunkbase/SKILL.md
-   ```
-
-2. The skill will be automatically available in Claude Code and Claude.ai (if you have Skills enabled)
+See: [Using Skills in Claude](https://support.claude.com/en/articles/12512180-using-skills-in-claude)
 
 ### Python Implementation
 
