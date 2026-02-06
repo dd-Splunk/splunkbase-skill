@@ -36,7 +36,7 @@ jobs:
 
                   # Create release with timestamp tag
                   gh release create "$TAG" splunkbase-skill.skill \
-                    --generate-release-notes \
+                    --generate-notes \
                     --target main
 
                   # Update latest tag to point to this commit
