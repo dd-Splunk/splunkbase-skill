@@ -4,6 +4,9 @@ on:
     push:
     workflow_dispatch:
 
+permissions:
+    contents: write
+
 jobs:
     create-release:
         runs-on: ubuntu-latest
@@ -14,28 +17,31 @@ jobs:
                   token: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Create skill archive
+              env:
+                  REPO_NAME: ${{ github.event.repository.name }}
               run: |
-                  mkdir -p splunkbase-skill
-                  rsync -r . splunkbase-skill/ --exclude=.git --exclude=.github --exclude=splunkbase-skill
-                  zip -r splunkbase-skill.skill splunkbase-skill/
-                  ls -lh splunkbase-skill.skill
+                  mkdir -p "${REPO_NAME}"
+                  rsync -r . "${REPO_NAME}/" --exclude=.git --exclude=.github --exclude="${REPO_NAME}"
+                  zip -r "${REPO_NAME}.skill" "${REPO_NAME}/"
+                  ls -lh "${REPO_NAME}.skill"
 
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
-                  name: splunkbase-skill-archive
-                  path: splunkbase-skill.skill
+                  name: ${{ github.event.repository.name }}-archive
+                  path: ${{ github.event.repository.name }}.skill
                   retention-days: 90
 
             - name: Create Release
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  REPO_NAME: ${{ github.event.repository.name }}
               run: |
                   TIMESTAMP=$(date +%Y%m%d-%H%M%S)
                   TAG="release-${TIMESTAMP}"
 
                   # Create release with timestamp tag
-                  gh release create "$TAG" splunkbase-skill.skill \
+                  gh release create "$TAG" "${REPO_NAME}.skill" \
                     --generate-notes \
                     --target main
 
