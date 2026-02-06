@@ -1,4 +1,4 @@
-name: Create Release Zip
+name: Create Release Skill
 
 on:
     push:
@@ -13,31 +13,25 @@ jobs:
               with:
                   token: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Create skill directory structure
+            - name: Create skill archive
               run: |
                   mkdir -p splunkbase-skill
-                  cp get_splunkbase_urls.sh splunkbase-skill/
-                  cp README.md splunkbase-skill/
-                  cp SKILL.md splunkbase-skill/
-                  cp splunkbase_urls.py splunkbase-skill/
-
-            - name: Create zip archive
-              run: |
-                  zip -r splunkbase-skill.zip splunkbase-skill/
-                  ls -lh splunkbase-skill.zip
+                  rsync -r . splunkbase-skill/ --exclude=.git --exclude=.github --exclude=splunkbase-skill
+                  zip -r splunkbase-skill.skill splunkbase-skill/
+                  ls -lh splunkbase-skill.skill
 
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
                   name: splunkbase-skill-archive
-                  path: splunkbase-skill.zip
+                  path: splunkbase-skill.skill
                   retention-days: 90
 
             - name: Create Release
               uses: softprops/action-gh-release@v1
               with:
                   tag_name: latest
-                  files: splunkbase-skill.zip
+                  files: splunkbase-skill.skill
                   draft: false
                   prerelease: false
                   generate_release_notes: true
