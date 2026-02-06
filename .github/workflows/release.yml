@@ -28,12 +28,18 @@ jobs:
                   retention-days: 90
 
             - name: Create Release
-              uses: softprops/action-gh-release@v1
-              with:
-                  tag_name: latest
-                  files: splunkbase-skill.skill
-                  draft: false
-                  prerelease: false
-                  generate_release_notes: true
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+                  TAG="release-${TIMESTAMP}"
+                  
+                  # Create release with timestamp tag
+                  gh release create "$TAG" splunkbase-skill.skill \
+                    --generate-release-notes \
+                    --target main
+                  
+                  # Update latest tag to point to this commit
+                  COMMIT=$(git rev-parse HEAD)
+                  git tag -f latest "$COMMIT"
+                  git push origin latest --force
