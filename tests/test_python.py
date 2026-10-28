@@ -49,6 +49,14 @@ class ParsingTests(unittest.TestCase):
                 sb.normalize_splunk_version(bad)
 
 
+class CleanTextTests(unittest.TestCase):
+    def test_clean_text(self):
+        self.assertEqual(sb.clean_text("a\tb\n c\x1b[0m\x00d"), "a b c [0m d")
+        self.assertEqual(sb.clean_text("  x  "), "x")
+        self.assertEqual(len(sb.clean_text("y" * 999)), 120)
+        self.assertEqual(sb.clean_text(123), "123")
+
+
 class SelectReleaseTests(unittest.TestCase):
     def test_skips_leading_releases_without_a_usable_name(self):
         releases = [{"name": "null"}, {"name": ""}, {"name": None}, {"name": "1.0.0"}]

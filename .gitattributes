@@ -5,3 +5,6 @@
 /.gitattributes export-ignore
 /README.md      export-ignore
 /CHANGELOG.md   export-ignore
+/SECURITY.md    export-ignore
+/SUPPORT.md     export-ignore
+/evals.json     export-ignore

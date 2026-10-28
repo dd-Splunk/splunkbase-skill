@@ -13,7 +13,7 @@
 
 set -euo pipefail
 
-VERSION="2.0.0"
+VERSION="2.1.0"
 BASE_URL="${SPLUNKBASE_BASE_URL:-https://splunkbase.splunk.com}"
 BASE_URL="${BASE_URL%/}"
 TIMEOUT=10
@@ -96,6 +96,7 @@ fetch_json() {
 # shellcheck disable=SC2016  # $-variables belong to jq, not the shell
 JQ_RESOLVE='
 def clean: gsub("^\\s+|\\s+$"; "");
+def tidy: gsub("[\\p{Cc}\\p{Zl}\\p{Zp}]+"; " ") | gsub("\\s+"; " ") | gsub("^ | $"; "") | if length > 120 then .[0:119] + "…" else . end;
 def supported: if length > 0 then "\(.[-1]) to \(.[0])" else "unknown" end;
 ($rel | map(select(type == "object" and (.name | type) == "string"
         and ((.name | ascii_downcase | clean) as $n
@@ -119,8 +120,8 @@ def supported: if length > 0 then "\(.[-1]) to \(.[0])" else "unknown" end;
     | if .error then . else
         (.r.name | clean) as $v
         | {app_id: ($id | tonumber),
-           title: ($app.title // "Unknown"),
-           slug: ($app.appid // null),
+           title: (($app.title // "Unknown") | tidy),
+           slug: (if $app.appid then ($app.appid | tidy) else null end),
            version: $v,
            url: "\($base)/app/\($id)/release/\($v | @uri)/download/",
            published: (.r.published_datetime // null),
@@ -129,7 +130,7 @@ def supported: if length > 0 then "\(.[-1]) to \(.[0])" else "unknown" end;
            warnings: (.w
              + (if $app.is_archived then ["app is archived on Splunkbase"] else [] end)
              + (if ($v | test("^[0-9][A-Za-z0-9_.+-]*$")) then [] else
-                 ["release name \"\($v)\" has extra text; it may be a platform-specific build, check it is the one you need"] end))}
+                 ["release name \"\($v | tidy)\" has extra text; it may be a platform-specific build, check it is the one you need"] end))}
       end
   end'
 
@@ -146,7 +147,7 @@ resolve_app() {
         echo "error: app ${id}: unexpected response" >&2
         return 1
     fi
-    if ! title="$(jq -r 'if type == "object" then (.title // "Unknown") else error("x") end' <<<"$app" 2>/dev/null)"; then
+    if ! title="$(jq -r 'if type == "object" then (.title // "Unknown") else error("x") end | gsub("[\\p{Cc}\\p{Zl}\\p{Zp}]+"; " ") | gsub("\\s+"; " ") | gsub("^ | $"; "") | if length > 120 then .[0:119] + "…" else . end' <<<"$app" 2>/dev/null)"; then
         echo "error: app ${id}: unexpected app response" >&2
         return 1
     fi
