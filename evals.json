@@ -52,6 +52,26 @@
       "expected_skill": "splunkbase-skill"
     },
     {
+      "id": "trigger_version_pick",
+      "description": "Fires on picking a release for a target Splunk version",
+      "tags": [
+        "trigger",
+        "positive"
+      ],
+      "prompt": "We're moving our test cluster to Splunk 9.4. Which release of the Splunk MCP Server (app 7931) should I download?",
+      "expected_skill": "splunkbase-skill"
+    },
+    {
+      "id": "trigger_name_to_compose",
+      "description": "Fires on an app name with no ID, needing a compose entry",
+      "tags": [
+        "trigger",
+        "positive"
+      ],
+      "prompt": "Find the Splunkbase download URL for the Splunk MCP Server and put it in my docker-compose.yml.",
+      "expected_skill": "splunkbase-skill"
+    },
+    {
       "id": "no_trigger_lifecycle",
       "description": "Does not fire on lifecycle/removal readiness",
       "tags": [
@@ -79,6 +99,36 @@
         "negative"
       ],
       "prompt": "Write an SPL search that counts failed logins per user over the last 24 hours.",
+      "expected_skill": null
+    },
+    {
+      "id": "no_trigger_upgrade_advice",
+      "description": "Near miss: upgrade-safety advice for an app already in production",
+      "tags": [
+        "trigger",
+        "negative"
+      ],
+      "prompt": "Should I upgrade the Splunk MCP Server on our production 9.4 search head to the newest version? Will it break anything?",
+      "expected_skill": null
+    },
+    {
+      "id": "no_trigger_operator",
+      "description": "Near miss: Kubernetes Operator app install is not a Splunkbase URL job",
+      "tags": [
+        "trigger",
+        "negative"
+      ],
+      "prompt": "How do I install apps on Splunk running under the Splunk Operator for Kubernetes?",
+      "expected_skill": null
+    },
+    {
+      "id": "no_trigger_compose_volume",
+      "description": "Near miss: compose help with no Splunkbase app involved",
+      "tags": [
+        "trigger",
+        "negative"
+      ],
+      "prompt": "Write a docker-compose.yml for a Splunk 9.4 container with a persistent volume for /opt/splunk/var.",
       "expected_skill": null
     },
     {
@@ -160,7 +210,20 @@
       "scorer": {
         "type": "model_graded_qa",
         "expected": "The answer runs scripts/splunkbase_urls.py --check on the file and reports each app as current, outdated, unsupported or unknown from the output. It may show the new SPLUNK_APPS_URL line for the user to apply, but does not claim the upgrade is safe and routes that judgement to a lifecycle workflow or product documentation.",
-        "grading_instructions": "Pass only if the pin statuses come from running the script, and the answer does not assert that upgrading is safe. Fail if it states statuses from memory, or declares the upgrade safe.\\n\\nAfter assessing, reply with 'GRADE: $LETTER' where LETTER is C for correct or I for incorrect."
+        "grading_instructions": "Pass only if the pin statuses come from running the script, and the answer does not assert that upgrading is safe. Fail if it states statuses from memory, or declares the upgrade safe.\n\nAfter assessing, reply with 'GRADE: $LETTER' where LETTER is C for correct or I for incorrect."
+      }
+    },
+    {
+      "id": "canary_image_version",
+      "description": "Derives the Splunk version from an image tag and reports compatibility from script output",
+      "tags": [
+        "behavior"
+      ],
+      "prompt": "I run splunk/splunk:9.4.2. Give me SPLUNK_APPS_URL for the Splunk MCP Server (app 7931).",
+      "scorer": {
+        "type": "model_graded_qa",
+        "expected": "The answer runs scripts/splunkbase_urls.py (or the bash fallback) with --image splunk/splunk:9.4.2 or --splunk-version 9.4, prints a SPLUNK_APPS_URL line for app 7931 taken from the script output, and reports the compatibility it returned. It does not state a version or compatibility from memory.",
+        "grading_instructions": "Pass only if the URL and compatibility come from running the script with a Splunk version derived from the image tag. Fail if it omits the version filter, or states a release or compatibility it did not get from the script.\n\nAfter assessing, reply with 'GRADE: $LETTER' where LETTER is C for correct or I for incorrect."
       }
     }
   ]
