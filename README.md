@@ -32,11 +32,12 @@ python3 scripts/splunkbase_urls.py --format env 4353 7931       # SPLUNK_APPS_UR
 python3 scripts/splunkbase_urls.py --splunk-version 9.4 4353    # newest release supporting Splunk 9.4
 python3 scripts/splunkbase_urls.py --image splunk/splunk:9.4.2 4353  # same, version read from the image tag
 python3 scripts/splunkbase_urls.py --cloud 4353                 # only Splunk Cloud compatible releases
+python3 scripts/splunkbase_urls.py --check .env                 # which pinned URLs are outdated (exit 3 if any)
 python3 scripts/splunkbase_urls.py --format json 4353           # app, version, compatibility, warnings
 python3 scripts/splunkbase_urls.py --search "config explorer"   # find IDs by name
 ```
 
-`scripts/get_splunkbase_urls.sh` (needs `curl` and `jq`, works with macOS bash 3.2) provides the same options except `--search` and the `table` format.
+`scripts/get_splunkbase_urls.sh` (needs `curl` and `jq`, works with macOS bash 3.2) provides the same options except `--search`, `--check` and the `table` format.
 
 Exit status: `0` all resolved, `1` at least one app failed (nothing on stdout unless `--partial`), `2` bad arguments. Warnings go to stderr.
 

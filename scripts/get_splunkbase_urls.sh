@@ -13,7 +13,7 @@
 
 set -euo pipefail
 
-VERSION="2.2.0"
+VERSION="2.3.0"
 BASE_URL="${SPLUNKBASE_BASE_URL:-https://splunkbase.splunk.com}"
 BASE_URL="${BASE_URL%/}"
 TIMEOUT=10
@@ -205,6 +205,7 @@ while [ $# -gt 0 ]; do
         --partial) PARTIAL=1; shift ;;
         -q | --quiet) QUIET=1; shift ;;
         --search | --search=*) die_usage "--search is only available in splunkbase_urls.py" ;;
+        --check | --check=*) die_usage "--check is only available in splunkbase_urls.py" ;;
         -*) die_usage "unknown option: $1" ;;
         *) RAW_APPS+=("$1"); shift ;;
     esac

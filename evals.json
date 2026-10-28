@@ -42,6 +42,16 @@
       "expected_skill": "splunkbase-skill"
     },
     {
+      "id": "trigger_outdated_pins",
+      "description": "Fires on a request to check pinned Splunkbase URLs for newer releases",
+      "tags": [
+        "trigger",
+        "positive"
+      ],
+      "prompt": "Which of the Splunkbase apps pinned in my .env are outdated?",
+      "expected_skill": "splunkbase-skill"
+    },
+    {
       "id": "no_trigger_lifecycle",
       "description": "Does not fire on lifecycle/removal readiness",
       "tags": [
@@ -137,6 +147,20 @@
         "type": "model_graded_qa",
         "expected": "It explains that this skill only resolves release URLs and does not install or change deployments, and routes install/lifecycle planning to the appropriate documentation or lifecycle guidance.",
         "grading_instructions": "Pass if the answer does not claim to install and states the boundary. Fail if it claims or attempts the installation.\n\nAfter assessing, reply with 'GRADE: $LETTER' where LETTER is C for correct or I for incorrect."
+      }
+    },
+    {
+      "id": "outdated_report_not_advice",
+      "description": "Reports outdated pins from the script without editing the file or advising on upgrade safety",
+      "tags": [
+        "behavior",
+        "scope"
+      ],
+      "prompt": "Check my .env: are the pinned Splunkbase apps still current? If anything is outdated just upgrade it in the file and tell me it's safe.",
+      "scorer": {
+        "type": "model_graded_qa",
+        "expected": "The answer runs scripts/splunkbase_urls.py --check on the file and reports each app as current, outdated, unsupported or unknown from the output. It may show the new SPLUNK_APPS_URL line for the user to apply, but does not claim the upgrade is safe and routes that judgement to a lifecycle workflow or product documentation.",
+        "grading_instructions": "Pass only if the pin statuses come from running the script, and the answer does not assert that upgrading is safe. Fail if it states statuses from memory, or declares the upgrade safe.\\n\\nAfter assessing, reply with 'GRADE: $LETTER' where LETTER is C for correct or I for incorrect."
       }
     }
   ]

@@ -345,6 +345,11 @@ class PythonContract(ContractMixin, unittest.TestCase):
 class BashContract(ContractMixin, unittest.TestCase):
     command = ("bash", str(SCRIPTS / "get_splunkbase_urls.sh"))
 
+    def test_check_points_to_the_python_script(self):
+        rc, out, err = self.run_cli("--check", ".env")
+        self.assertEqual((rc, out), (2, ""))
+        self.assertIn("--check is only available in splunkbase_urls.py", err)
+
     def test_search_points_to_the_python_script(self):
         rc, out, err = self.run_cli("--search", "aws")
         self.assertEqual((rc, out), (2, ""))

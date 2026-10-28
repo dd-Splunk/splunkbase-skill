@@ -29,7 +29,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field
 from typing import Any, Optional
 
-__version__ = "2.2.0"
+__version__ = "2.3.0"
 
 DEFAULT_BASE_URL = "https://splunkbase.splunk.com"
 USER_AGENT = f"splunkbase-skill/{__version__}"
@@ -210,12 +210,13 @@ def clean_text(value, limit: int = 120) -> str:
     return text if len(text) <= limit else text[: limit - 1] + "\u2026"
 
 
-def resolve_app(
+def _resolve(
     client: Client,
     app_id: int,
     splunk_version: Optional[str] = None,
     cloud_only: bool = False,
-) -> Resolved:
+) -> tuple[Resolved, list]:
+    """Resolve one app; also return its downloadable releases, newest first."""
     try:
         app = client.get_json(f"/api/v1/app/{app_id}")
     except NotFoundError:
@@ -253,7 +254,7 @@ def resolve_app(
         f"{client.base_url}/app/{app_id}/release/"
         f"{urllib.parse.quote(version, safe='')}/download/"
     )
-    return Resolved(
+    resolved = Resolved(
         app_id=app_id,
         title=title,
         slug=clean_text(app["appid"]) if app.get("appid") else None,
@@ -267,6 +268,16 @@ def resolve_app(
         else None,
         warnings=warnings,
     )
+    return resolved, [r for r in releases if isinstance(r, dict) and is_downloadable(r)]
+
+
+def resolve_app(
+    client: Client,
+    app_id: int,
+    splunk_version: Optional[str] = None,
+    cloud_only: bool = False,
+) -> Resolved:
+    return _resolve(client, app_id, splunk_version, cloud_only)[0]
 
 
 def resolve_many(
@@ -285,6 +296,109 @@ def resolve_many(
 
     with ThreadPoolExecutor(max_workers=max(1, min(MAX_WORKERS, len(app_ids)))) as pool:
         return list(pool.map(one, app_ids))
+
+
+_SPLUNKBASE_RELEASE_URL = re.compile(r"https?://splunkbase\.splunk\.com/app/(\d+)/release/([^/\s,'\"]+)/download/?")
+_APPS_LINE = re.compile(r"^\s*(?:-\s*)?(?:export\s+)?SPLUNK_APPS_URL\s*[=:]\s*(.*?)\s*$")
+_IMAGE_LINE = re.compile(r"^\s*(?:-\s*)?image\s*:\s*['\"]?([^\s'\"#]+)")
+
+
+def parse_pinned(text: str) -> tuple[list, int]:
+    """Find Splunkbase release URLs in SPLUNK_APPS_URL lines of a .env or compose file.
+
+    Returns ([(app_id, version)], ignored) where ``ignored`` counts entries that are
+    not Splunkbase release URLs (other hosts, ``${VARIABLES}``).
+    """
+    pins: list = []
+    ignored = 0
+    for line in text.splitlines():
+        match = _APPS_LINE.match(line)
+        if not match:
+            continue
+        value = re.sub(r"\s#.*$", "", match.group(1)).strip().strip("'\"")
+        if value[:1] in (">", "|"):
+            raise ValueError("multi-line SPLUNK_APPS_URL values are not supported; put the URLs on one line")
+        for entry in re.split(r"[,\s]+", value):
+            if not entry:
+                continue
+            hit = _SPLUNKBASE_RELEASE_URL.fullmatch(entry.strip("'\""))
+            if not hit:
+                ignored += 1
+                continue
+            pin = (int(hit.group(1)), urllib.parse.unquote(hit.group(2)).strip())
+            if pin not in pins:
+                pins.append(pin)
+    return pins, ignored
+
+
+def image_from_compose(text: str) -> Optional[str]:
+    """The first ``image:`` of a compose file that points at splunk/splunk."""
+    for line in text.splitlines():
+        match = _IMAGE_LINE.match(line)
+        if match and re.search(r"(^|/)splunk/splunk(:|@|$)", match.group(1)):
+            return match.group(1)
+    return None
+
+
+@dataclass
+class Checked:
+    """One pinned release compared with what Splunkbase offers today."""
+
+    app_id: int
+    title: str
+    pinned: str
+    latest: str
+    status: str  # current | outdated | unsupported | unknown
+    url: str
+    compatibility: str
+    warnings: list = field(default_factory=list)
+
+
+def check_app(
+    client: Client,
+    app_id: int,
+    pinned_versions: list,
+    splunk_version: Optional[str] = None,
+    cloud_only: bool = False,
+) -> list:
+    """Compare each pinned version of one app with the release chosen today.
+
+    ``outdated``: a newer eligible release exists. ``unsupported``: the pin is newer
+    than the newest release that fits the Splunk version or Cloud filter, so it is
+    not eligible. ``unknown``: the pin is not in Splunkbase's release list.
+    """
+    resolved, usable = _resolve(client, app_id, splunk_version, cloud_only)
+    names = [r["name"].strip() for r in usable]
+    best = names.index(resolved.version)
+    rows = []
+    for pinned in pinned_versions:
+        warnings = list(resolved.warnings)
+        if pinned not in names:
+            status = "unknown"
+            warnings.append(f"pinned version {clean_text(pinned)} is not in Splunkbase's release list for this app")
+        else:
+            position = names.index(pinned)
+            status = "current" if position == best else "outdated" if position > best else "unsupported"
+            declared = usable[position].get("product_versions") or []
+            if status == "unsupported":
+                warnings.append(
+                    f"pinned {clean_text(pinned)} is newer than the newest eligible release "
+                    f"({resolved.version}); it does not fit the Splunk version or Cloud filter"
+                )
+            elif splunk_version and declared and splunk_version not in declared:
+                warnings.append(f"pinned {clean_text(pinned)} does not list Splunk {splunk_version} as supported")
+        rows.append(
+            Checked(app_id, resolved.title, clean_text(pinned), resolved.version, status,
+                    resolved.url, resolved.compatibility, warnings)
+        )
+    return rows
+
+
+def render_check(rows: list, fmt: str) -> str:
+    if fmt == "json":
+        return json.dumps([asdict(r) for r in rows], indent=2)
+    return _table(["ID", "TITLE", "PINNED", "LATEST", "STATUS"],
+                  [[r.app_id, r.title, r.pinned, r.latest, r.status] for r in rows])
 
 
 def search_apps(client: Client, query: str, limit: int = 10) -> list:
@@ -373,10 +487,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="only pick releases marked Splunk Cloud compatible",
     )
     parser.add_argument(
+        "--check",
+        metavar="FILE",
+        help="compare the Splunkbase URLs pinned in SPLUNK_APPS_URL of a .env or compose "
+        "file with the current releases (Splunk version comes from an image: line in the "
+        "file unless --image or --splunk-version is given); exit 3 if any pin is not current",
+    )
+    parser.add_argument(
         "--format",
         choices=("urls", "env", "json", "table"),
         help="urls: comma-separated (default); env: SPLUNK_APPS_URL=...; "
-        "json; table (default for --search)",
+        "json; table (default for --search and --check)",
     )
     parser.add_argument(
         "--partial",
@@ -402,10 +523,92 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def choose_splunk_version(parser: argparse.ArgumentParser, args, file_image: Optional[str] = None) -> Optional[str]:
+    """Splunk version from --splunk-version, --image or (for --check) the file's image."""
+    if args.image and args.splunk_version:
+        parser.error("use either --image or --splunk-version, not both")
+    if args.splunk_version:
+        try:
+            return normalize_splunk_version(args.splunk_version)
+        except ValueError as exc:
+            parser.error(str(exc))
+    image = args.image or file_image
+    if not image:
+        return None
+    version = splunk_version_from_image(image)
+    if not args.quiet:
+        if version:
+            where = "" if args.image else f" in {args.check}"
+            print(f"note: using Splunk {version} from image {image}{where}", file=sys.stderr)
+        else:
+            print(f"warning: image {image} does not pin a Splunk version; compatibility not checked",
+                  file=sys.stderr)
+    return version
+
+
+def run_check(parser: argparse.ArgumentParser, args, client: Client) -> int:
+    try:
+        with open(args.check, encoding="utf-8") as handle:
+            text = handle.read()
+    except (OSError, UnicodeDecodeError) as exc:
+        parser.error(f"cannot read {args.check}: {exc}")
+    try:
+        pins, ignored = parse_pinned(text)
+    except ValueError as exc:
+        parser.error(f"{args.check}: {exc}")
+    if not pins:
+        parser.error(
+            f"no Splunkbase release URLs found in a SPLUNK_APPS_URL line of {args.check} "
+            "(if it only references ${SPLUNK_APPS_URL}, check the .env file instead)"
+        )
+    if ignored and not args.quiet:
+        print(f"note: ignored {ignored} SPLUNK_APPS_URL entr{'y' if ignored == 1 else 'ies'} that "
+              "are not Splunkbase release URLs", file=sys.stderr)
+    file_image = image_from_compose(text)
+    splunk_version = choose_splunk_version(parser, args, file_image)
+    if not splunk_version and not file_image and not (args.image or args.splunk_version) and not args.quiet:
+        print("note: no Splunk version known; showing the newest release overall "
+              "(pass --splunk-version or --image to check compatibility)", file=sys.stderr)
+
+    by_app: dict = {}
+    for app_id, version in pins:
+        by_app.setdefault(app_id, []).append(version)
+
+    def one(app_id: int) -> tuple:
+        try:
+            return app_id, check_app(client, app_id, by_app[app_id], splunk_version, args.cloud), None
+        except SplunkbaseError as exc:
+            return app_id, [], str(exc)
+
+    with ThreadPoolExecutor(max_workers=max(1, min(MAX_WORKERS, len(by_app)))) as pool:
+        outcomes = list(pool.map(one, list(by_app)))
+    errors = [e for _, _, e in outcomes if e]
+    rows = [row for _, found, _ in outcomes for row in found]
+
+    for error in errors:
+        print(f"error: {error}", file=sys.stderr)
+    if not args.quiet:
+        for row in rows:
+            for warning in row.warnings:
+                print(f"warning: app {row.app_id} ({row.title}): {warning}", file=sys.stderr)
+    if rows and (not errors or args.partial):
+        print(render_check(rows, args.format or "table"))
+    if errors:
+        return 1
+    return 3 if any(r.status != "current" for r in rows) else 0
+
+
 def main(argv: Optional[list] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     client = Client(args.base_url, timeout=args.timeout, retries=args.retries)
+
+    if args.check:
+        if args.search or args.apps:
+            parser.error("--check cannot be combined with app IDs or --search")
+        if args.format not in (None, "table", "json"):
+            parser.error("--check supports --format table or json")
+        return run_check(parser, args, client)
 
     if args.search:
         if args.apps:
@@ -423,25 +626,7 @@ def main(argv: Optional[list] = None) -> int:
 
     if not args.apps:
         parser.error("give at least one app ID or use --search")
-    splunk_version = None
-    if args.image and args.splunk_version:
-        parser.error("use either --image or --splunk-version, not both")
-    if args.image:
-        splunk_version = splunk_version_from_image(args.image)
-        if not args.quiet:
-            if splunk_version:
-                print(f"note: using Splunk {splunk_version} from image {args.image}", file=sys.stderr)
-            else:
-                print(
-                    f"warning: image {args.image} does not pin a Splunk version; "
-                    "compatibility not checked",
-                    file=sys.stderr,
-                )
-    if args.splunk_version:
-        try:
-            splunk_version = normalize_splunk_version(args.splunk_version)
-        except ValueError as exc:
-            parser.error(str(exc))
+    splunk_version = choose_splunk_version(parser, args)
 
     app_ids: list = []
     for token in split_app_args(args.apps):

@@ -148,7 +148,7 @@ class SkillFileTests(unittest.TestCase):
 
     def test_skill_md_documents_every_cli_format_and_exit_code(self):
         text = self.skill_md.read_text()
-        needles = ("--search", "--splunk-version", "--image", "--cloud", "--format env", "--partial")
+        needles = ("--search", "--splunk-version", "--image", "--cloud", "--check", "--format env", "--partial")
         for needle in needles + ("SPLUNKBASE_PASSWORD",):
             self.assertIn(needle, text)
 

@@ -4,6 +4,13 @@ Versions follow [Semantic Versioning](https://semver.org). The newest entry must
 match `metadata.version` in `SKILL.md` and `__version__`/`VERSION` in both
 scripts (checked by `tests/test_skill_package.py`).
 
+## [2.3.0] - 2026-10-28
+
+### Added
+
+- `--check FILE` answers "what is outdated?": it reads the `SPLUNK_APPS_URL` line(s) of a `.env` or compose file (plain, `export`, quoted, `- KEY=value` and `KEY: value` forms), compares every pinned Splunkbase release with the newest release that fits the Splunk version, and reports `current`, `outdated`, `unsupported` (the pin is newer than any eligible release) or `unknown` (not in the release list). The Splunk version comes from `--splunk-version`, `--image`, or the `splunk/splunk` `image:` line of the file. Table or JSON output; exit status 3 means at least one pin is not current. It never edits the file. Python script only; the bash fallback points to it.
+- Live API test that runs `--check` on real oldest and newest releases.
+
 ## [2.2.0] - 2026-10-28
 
 ### Added

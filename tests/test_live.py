@@ -66,6 +66,21 @@ class LiveApiTests(unittest.TestCase):
                 for item in get("/api/v1/app/%d/release" % app_id):
                     self.assertIsInstance(item["cloud_compatible"], bool)
 
+    def test_check_flags_an_old_pin_and_accepts_the_newest(self):
+        import tempfile
+        releases = get("/api/v1/app/7931/release")
+        oldest, newest = releases[-1]["name"], releases[0]["name"]
+        line = "SPLUNK_APPS_URL=%s/app/7931/release/%s/download/,%s/app/7931/release/%s/download/\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / ".env"
+            path.write_text(line % (BASE, oldest, BASE, newest))
+            proc = subprocess.run(
+                [sys.executable, str(SCRIPTS / "splunkbase_urls.py"), "--check", str(path), "--format", "json"],
+                capture_output=True, text=True, timeout=120,
+            )
+        self.assertEqual(proc.returncode, 3, proc.stderr)
+        self.assertEqual([r["status"] for r in json.loads(proc.stdout)], ["outdated", "current"])
+
     def test_search_returns_ids_and_titles(self):
         data = get("/api/v1/app/?query=aws&limit=5")
         self.assertIn(1876, [r["uid"] for r in data["results"]])
