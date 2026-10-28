@@ -15,6 +15,7 @@ Aligned with the conventions of the official [splunk-agent-skills](https://githu
 - `evals.json`: trigger (positive/negative) and behaviour evals in the official format.
 - `references/sources.md`, `SECURITY.md`, `SUPPORT.md`.
 - Install with `npx skills add dd-Splunk/splunkbase-skill`.
+- Apache-2.0 `LICENSE` (shipped in the `.skill` archive) and `license: Apache-2.0` in the `SKILL.md` frontmatter.
 
 ### Security
 
