@@ -1,0 +1,136 @@
+[
+  {
+    "id": 123876,
+    "app": 833,
+    "name": "10.3.4",
+    "product": {
+      "name": "splunk",
+      "display_name": "Splunk"
+    },
+    "CIM_versions": [
+      "6.x"
+    ],
+    "product_versions": [
+      "10.7",
+      "10.6",
+      "10.5",
+      "10.4",
+      "10.3",
+      "10.2",
+      "10.1",
+      "10.0",
+      "9.4"
+    ],
+    "created_datetime": "2026-09-01T06:39:48.418592Z",
+    "published_datetime": "2026-09-01T06:39:48.418217Z",
+    "size": 138383,
+    "filename": "splunk-add-on-for-unix-and-linux_1034.spl",
+    "platform": "independent",
+    "install_method_single": "simple",
+    "install_method_distributed": "appmgmt_phase",
+    "fedramp_validation": "no",
+    "fips_compatibility": false,
+    "cloud_compatible": true
+  },
+  {
+    "id": 123516,
+    "app": 833,
+    "name": "10.3.3",
+    "product": {
+      "name": "splunk",
+      "display_name": "Splunk"
+    },
+    "CIM_versions": [
+      "6.x"
+    ],
+    "product_versions": [
+      "10.7",
+      "10.6",
+      "10.5",
+      "10.4",
+      "10.3",
+      "10.2",
+      "10.1",
+      "10.0",
+      "9.4"
+    ],
+    "created_datetime": "2026-08-11T14:19:36.390054Z",
+    "published_datetime": "2026-08-11T14:19:36.389630Z",
+    "size": 138177,
+    "filename": "splunk-add-on-for-unix-and-linux_1033.spl",
+    "platform": "independent",
+    "install_method_single": "simple",
+    "install_method_distributed": "appmgmt_phase",
+    "fedramp_validation": "no",
+    "fips_compatibility": false,
+    "cloud_compatible": true
+  },
+  {
+    "id": 123055,
+    "app": 833,
+    "name": "10.3.2",
+    "product": {
+      "name": "splunk",
+      "display_name": "Splunk"
+    },
+    "CIM_versions": [
+      "6.x"
+    ],
+    "product_versions": [
+      "10.6",
+      "10.5",
+      "10.4",
+      "10.3",
+      "10.2",
+      "10.1",
+      "10.0",
+      "9.4",
+      "9.3",
+      "9.2"
+    ],
+    "created_datetime": "2026-07-30T15:39:23.667163Z",
+    "published_datetime": "2026-07-30T15:39:23.666687Z",
+    "size": 138095,
+    "filename": "splunk-add-on-for-unix-and-linux_1032.spl",
+    "platform": "independent",
+    "install_method_single": "simple",
+    "install_method_distributed": "appmgmt_phase",
+    "fedramp_validation": "no",
+    "fips_compatibility": false,
+    "cloud_compatible": true
+  },
+  {
+    "id": 39948,
+    "app": 833,
+    "name": "10.2.0",
+    "product": {
+      "name": "splunk",
+      "display_name": "Splunk"
+    },
+    "CIM_versions": [
+      "6.x"
+    ],
+    "product_versions": [
+      "10.6",
+      "10.5",
+      "10.4",
+      "10.3",
+      "10.2",
+      "10.1",
+      "10.0",
+      "9.4",
+      "9.3",
+      "9.2"
+    ],
+    "created_datetime": "2025-10-07T12:34:59.315458Z",
+    "published_datetime": "2025-10-08T11:29:32.086820Z",
+    "size": 978053,
+    "filename": "splunk-add-on-for-unix-and-linux_1020.tgz",
+    "platform": "independent",
+    "install_method_single": "simple",
+    "install_method_distributed": "appmgmt_phase",
+    "fedramp_validation": "no",
+    "fips_compatibility": false,
+    "cloud_compatible": true
+  }
+]

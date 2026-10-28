@@ -1,0 +1,38 @@
+name: Splunkbase API check
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Live API tests
+        id: live
+        env:
+          SPLUNKBASE_LIVE: "1"
+        run: python -m unittest tests.test_live -v
+      - name: Open an issue when the API has drifted
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          existing="$(gh issue list --label api-drift --state open --json number --jq '.[0].number // empty')"
+          body="The weekly live check failed: ${RUN_URL}"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh label create api-drift --color B60205 --description "Splunkbase API changed" 2>/dev/null || true
+            gh issue create --title "Splunkbase API drift detected" --label api-drift --body "$body"
+          fi

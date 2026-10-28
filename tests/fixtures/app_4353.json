@@ -1,0 +1,22 @@
+{
+  "created_time": "2026-06-21T05:44:45+00:00",
+  "published_time": "2026-06-21T05:44:45+00:00",
+  "updated_time": "2026-06-21T06:32:40+00:00",
+  "cloud_compatible": false,
+  "fedramp_validation": "no",
+  "fips_compatibility": false,
+  "install_method_single": "rejected",
+  "install_method_distributed": "rejected",
+  "uid": 4353,
+  "appid": "config_explorer",
+  "title": "Config Explorer",
+  "type": "app",
+  "license_name": "GNU Affero General Public License v3.0",
+  "license_url": "https://github.com/ChrisYounger/config_explorer/blob/master/LICENSE",
+  "access": "unrestricted",
+  "path": "https://splunkbase.splunk.com/app/4353/",
+  "download_count": 46696,
+  "install_count": 0,
+  "archive_status": "live",
+  "is_archived": false
+}

@@ -1,51 +1,64 @@
-name: Create Release Skill
+name: Release
 
 on:
-    push:
-    workflow_dispatch:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to (re)build, e.g. v2.0.0"
+        required: true
 
 permissions:
-    contents: write
+  contents: write
 
 jobs:
-    create-release:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
-              with:
-                  token: ${{ secrets.GITHUB_TOKEN }}
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
 
-            - name: Create skill archive
-              env:
-                  REPO_NAME: ${{ github.event.repository.name }}
-              run: |
-                  mkdir -p "${REPO_NAME}"
-                  rsync -r . "${REPO_NAME}/" --exclude=.git --exclude=.github --exclude="${REPO_NAME}"
-                  zip -r "${REPO_NAME}.skill" "${REPO_NAME}/"
-                  ls -lh "${REPO_NAME}.skill"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-            - name: Upload artifact
-              uses: actions/upload-artifact@v4
-              with:
-                  name: ${{ github.event.repository.name }}-archive
-                  path: ${{ github.event.repository.name }}.skill
-                  retention-days: 90
+      - name: Tag must match SKILL.md version
+        run: |
+          declared="$(sed -n 's/^  version: *//p' SKILL.md | head -1)"
+          if [ "v${declared}" != "${TAG}" ]; then
+            echo "::error::tag ${TAG} does not match SKILL.md metadata.version ${declared}"
+            exit 1
+          fi
 
-            - name: Create Release
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  REPO_NAME: ${{ github.event.repository.name }}
-              run: |
-                  TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-                  TAG="release-${TIMESTAMP}"
+      - name: Tests
+        run: python -m unittest discover -s tests
 
-                  # Create release with timestamp tag
-                  gh release create "$TAG" "${REPO_NAME}.skill" \
-                    --generate-notes \
-                    --target main
+      - name: Build skill archive
+        run: git archive --format=zip --prefix=splunkbase-skill/ -o splunkbase-skill.skill "${TAG}"
 
-                  # Update latest tag to point to this commit
-                  COMMIT=$(git rev-parse HEAD)
-                  git tag -f latest "$COMMIT"
-                  git push origin latest --force
+      - name: Archive contents
+        run: unzip -l splunkbase-skill.skill
+
+      - name: Release notes from CHANGELOG
+        run: |
+          version="${TAG#v}"
+          awk -v v="$version" '
+            $0 ~ "^## \\[" v "\\]" {found=1; next}
+            found && /^## / {exit}
+            found {print}
+          ' CHANGELOG.md > notes.md
+          test -s notes.md || { echo "::error::no CHANGELOG entry for ${version}"; exit 1; }
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release upload "${TAG}" splunkbase-skill.skill --clobber
+          else
+            gh release create "${TAG}" splunkbase-skill.skill --title "${TAG}" --notes-file notes.md --verify-tag
+          fi

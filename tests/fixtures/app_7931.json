@@ -1,0 +1,22 @@
+{
+  "created_time": "2026-10-24T04:30:51+00:00",
+  "published_time": "2026-10-24T04:30:51+00:00",
+  "updated_time": "2026-10-24T04:55:00+00:00",
+  "cloud_compatible": true,
+  "fedramp_validation": "no",
+  "fips_compatibility": false,
+  "install_method_single": "simple",
+  "install_method_distributed": "appmgmt_phase",
+  "uid": 7931,
+  "appid": "Splunk_MCP_Server",
+  "title": "Splunk MCP Server",
+  "type": "app",
+  "license_name": "Splunk General Terms",
+  "license_url": "https://www.splunk.com/en_us/legal/splunk-general-terms.html",
+  "access": "unrestricted",
+  "path": "https://splunkbase.splunk.com/app/7931/",
+  "download_count": 25510,
+  "install_count": 0,
+  "archive_status": "live",
+  "is_archived": false
+}

@@ -1,0 +1,22 @@
+{
+  "created_time": "2026-06-15T09:23:37+00:00",
+  "published_time": "2026-06-15T09:23:37+00:00",
+  "updated_time": "2026-06-17T16:53:33+00:00",
+  "cloud_compatible": false,
+  "fedramp_validation": "no",
+  "fips_compatibility": false,
+  "install_method_single": "rejected",
+  "install_method_distributed": "rejected",
+  "uid": 1606,
+  "appid": "61fd08aa-15fa-451d-bd5f-bbba42b6ec7c",
+  "title": "Splunk ODBC",
+  "type": "addon",
+  "license_name": "Splunk General Terms",
+  "license_url": "https://www.splunk.com/en_us/legal/splunk-general-terms.html",
+  "access": "unrestricted",
+  "path": "https://splunkbase.splunk.com/app/1606/",
+  "download_count": 39120,
+  "install_count": 0,
+  "archive_status": "live",
+  "is_archived": false
+}

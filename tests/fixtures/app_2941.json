@@ -1,0 +1,22 @@
+{
+  "created_time": "2022-04-11T19:24:57+00:00",
+  "published_time": "2022-04-15T17:00:00+00:00",
+  "updated_time": "2023-02-23T22:32:29+00:00",
+  "cloud_compatible": false,
+  "fedramp_validation": "no",
+  "fips_compatibility": false,
+  "install_method_single": "unknown",
+  "install_method_distributed": "unknown",
+  "uid": 2941,
+  "appid": "7d4301e6-827a-11e5-97c0-0aaaffae5557",
+  "title": "Splunk User Behavior Analytics (Splunk UBA)",
+  "type": "app",
+  "license_name": "Splunk General Terms",
+  "license_url": "https://www.splunk.com/en_us/legal/splunk-general-terms.html",
+  "access": "unrestricted",
+  "path": "https://splunkbase.splunk.com/app/2941/",
+  "download_count": "N/A",
+  "install_count": "N/A",
+  "archive_status": "live",
+  "is_archived": false
+}

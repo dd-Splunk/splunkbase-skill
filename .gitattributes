@@ -1,0 +1,7 @@
+# Files excluded from the .skill archive built with `git archive`.
+/tests          export-ignore
+/.github        export-ignore
+/.gitignore     export-ignore
+/.gitattributes export-ignore
+/README.md      export-ignore
+/CHANGELOG.md   export-ignore
