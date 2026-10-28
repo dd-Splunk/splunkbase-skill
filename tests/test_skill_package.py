@@ -151,6 +151,13 @@ class SkillFileTests(unittest.TestCase):
         for needle in ("--search", "--splunk-version", "--format env", "--partial", "SPLUNKBASE_PASSWORD"):
             self.assertIn(needle, text)
 
+    def test_license_file_matches_declared_license_and_ships(self):
+        self.assertEqual(self.meta["license"], "Apache-2.0")
+        text = (ROOT / "LICENSE").read_text()
+        self.assertIn("Apache License", text)
+        self.assertIn("Version 2.0, January 2004", text)
+        self.assertNotRegex((ROOT / ".gitattributes").read_text(), r"(?m)^/LICENSE\s+export-ignore")
+
     def test_no_hard_coded_release_versions_in_skill_instructions(self):
         # Versions rot; the skill must tell Claude to look them up instead.
         text = self.skill_md.read_text()

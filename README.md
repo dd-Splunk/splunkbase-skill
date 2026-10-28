@@ -12,7 +12,7 @@ Or with the [`skills` CLI](https://github.com/vercel-labs/skills), the same inst
 npx skills add dd-Splunk/splunkbase-skill --agent claude-code --copy --yes
 ```
 
-`agents/openai.yaml` provides the interface metadata for other agents. This skill complements the official lifecycle and product-question skills: they give advice and citations, this one resolves exact release URLs from the live API. It is an unofficial personal project, see [SUPPORT.md](SUPPORT.md).
+`agents/openai.yaml` provides the interface metadata for other agents. This skill complements the official lifecycle and product-question skills: they give advice and citations, this one resolves exact release URLs from the live API. It is an unofficial personal project, see [SUPPORT.md](SUPPORT.md); licensed under [Apache-2.0](LICENSE).
 
 Then ask, for example: *"Give me SPLUNK_APPS_URL for Splunkbase apps 4353 and 7931 for Splunk 9.4"* or *"Find the Splunkbase app for Config Explorer"*.
 
@@ -52,3 +52,7 @@ shellcheck scripts/get_splunkbase_urls.sh
 1. Bump the version in `SKILL.md` (`metadata.version`), both scripts, and add a `CHANGELOG.md` entry.
 2. Merge to `main`, then `git tag v2.1.0 && git push origin v2.1.0`.
 3. The release workflow checks the tag matches `SKILL.md`, runs the tests, builds `splunkbase-skill.skill` from `git archive` (files marked `export-ignore` in `.gitattributes` are left out) and publishes the release with the changelog notes.
+
+## License
+
+[Apache-2.0](LICENSE).

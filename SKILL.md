@@ -1,6 +1,7 @@
 ---
 name: splunkbase-skill
 description: Resolve Splunkbase apps to their current download URLs, optionally for a specific Splunk version, and find app IDs by name. Use when the user wants the latest release URL of a Splunkbase app or add-on, needs SPLUNK_APPS_URL for splunk/splunk Docker Compose or Kubernetes deployments, asks which Splunkbase release supports their Splunk version, or gives a splunkbase.splunk.com link or app ID. Route app lifecycle, upgrade, or removal advice and general product questions to their owning workflows.
+license: Apache-2.0
 metadata:
   version: 2.1.0
   splunk:
