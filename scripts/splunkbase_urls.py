@@ -29,7 +29,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field
 from typing import Any, Optional
 
-__version__ = "2.1.0"
+__version__ = "2.1.1"
 
 DEFAULT_BASE_URL = "https://splunkbase.splunk.com"
 USER_AGENT = f"splunkbase-skill/{__version__}"

@@ -158,6 +158,14 @@ class SkillFileTests(unittest.TestCase):
         self.assertIn("Version 2.0, January 2004", text)
         self.assertNotRegex((ROOT / ".gitattributes").read_text(), r"(?m)^/LICENSE\s+export-ignore")
 
+    def test_personal_project_disclaimer_is_everywhere_users_look(self):
+        for name in ("README.md", "SUPPORT.md", "SKILL.md"):
+            text = " ".join((ROOT / name).read_text().split()).lower()
+            with self.subTest(file=name):
+                self.assertIn("personal project", text)
+                self.assertIn("production", text)
+                self.assertRegex(text, r"not endorsed or supported by cisco")
+
     def test_no_hard_coded_release_versions_in_skill_instructions(self):
         # Versions rot; the skill must tell Claude to look them up instead.
         text = self.skill_md.read_text()

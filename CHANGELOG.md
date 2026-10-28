@@ -4,6 +4,12 @@ Versions follow [Semantic Versioning](https://semver.org). The newest entry must
 match `metadata.version` in `SKILL.md` and `__version__`/`VERSION` in both
 scripts (checked by `tests/test_skill_package.py`).
 
+## [2.1.1] - 2026-10-28
+
+### Changed
+
+- Made the project status explicit: personal project, not for production use, not endorsed or supported by Cisco or Splunk. Stated in the README banner, `SUPPORT.md` and a new Status section in `SKILL.md`, with a test that keeps all three in place.
+
 ## [2.1.0] - 2026-10-28
 
 Aligned with the conventions of the official [splunk-agent-skills](https://github.com/splunk/splunk-agent-skills).

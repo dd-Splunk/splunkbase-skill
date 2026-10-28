@@ -3,7 +3,7 @@ name: splunkbase-skill
 description: Resolve Splunkbase apps to their current download URLs, optionally for a specific Splunk version, and find app IDs by name. Use when the user wants the latest release URL of a Splunkbase app or add-on, needs SPLUNK_APPS_URL for splunk/splunk Docker Compose or Kubernetes deployments, asks which Splunkbase release supports their Splunk version, or gives a splunkbase.splunk.com link or app ID. Route app lifecycle, upgrade, or removal advice and general product questions to their owning workflows.
 license: Apache-2.0
 metadata:
-  version: 2.1.0
+  version: 2.1.1
   splunk:
     domain: splunkbase-release-resolution
     products:
@@ -36,6 +36,13 @@ metadata:
 Resolve Splunkbase apps to exact, current release URLs by running the bundled
 script. Never write a release URL or version from memory: versions change
 constantly and some releases have unusual names.
+
+## Status
+
+Personal project, not meant for production use. It is not a Splunk or Cisco
+product and is not endorsed or supported by Cisco or Splunk. It relies on
+Splunkbase's undocumented API, so treat every result as something to verify.
+When the output feeds a production system, say so and recommend review first.
 
 ## Prerequisites
 
