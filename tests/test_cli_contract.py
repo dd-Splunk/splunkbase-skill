@@ -19,12 +19,15 @@ APP = "/api/v1/app/%s"
 RELEASE = "/api/v1/app/%s/release"
 
 
-def release(name, versions, published="2026-01-01T00:00:00Z"):
-    return {
+def release(name, versions, published="2026-01-01T00:00:00Z", cloud=None):
+    data = {
         "name": name,
         "published_datetime": published,
         "product_versions": versions,
     }
+    if cloud is not None:
+        data["cloud_compatible"] = cloud
+    return data
 
 
 class ContractMixin:
@@ -80,13 +83,14 @@ class ContractMixin:
         self.assertEqual(
             set(item),
             {"app_id", "title", "slug", "version", "url", "published",
-             "splunk_versions", "compatibility", "warnings"},
+             "splunk_versions", "compatibility", "cloud_compatible", "warnings"},
         )
         self.assertEqual(item["app_id"], 7931)
         self.assertEqual(item["title"], "Splunk MCP Server")
         self.assertEqual(item["version"], "2.1.0")
         self.assertEqual(item["compatibility"], "compatible")
         self.assertIn("10.2", item["splunk_versions"])
+        self.assertIs(item["cloud_compatible"], True)
 
     def test_accepts_urls_and_comma_lists_and_ignores_duplicates(self):
         rc, out, err = self.run_cli(
@@ -132,6 +136,87 @@ class ContractMixin:
         self.assertEqual(rc, 0, err)
         self.assertEqual(json.loads(out)[0]["compatibility"], "unknown")
         self.assertIn("does not declare Splunk compatibility", err)
+
+    # --- Splunk Cloud filter ----------------------------------------------
+
+    def serve_mixed_cloud_app(self):
+        self.server.static(APP % 9002, 200, {"title": "Mixed Cloud App", "appid": "mixed"})
+        self.server.static(
+            RELEASE % 9002,
+            200,
+            [release("3.0.0", ["10.0"], cloud=False), release("2.0.0", ["9.4", "10.0"], cloud=True)],
+        )
+
+    def test_cloud_skips_releases_not_marked_cloud_compatible(self):
+        self.serve_mixed_cloud_app()
+        rc, out, _ = self.run_cli("9002")
+        self.assertEqual(out, self.url(9002, "3.0.0"))
+        rc, out, err = self.run_cli("--cloud", "9002")
+        self.assertEqual((rc, err), (0, ""))
+        self.assertEqual(out, self.url(9002, "2.0.0"))
+
+    def test_cloud_with_no_cloud_compatible_release_fails(self):
+        rc, out, err = self.run_cli("--cloud", "4353")
+        self.assertEqual((rc, out), (1, ""))
+        self.assertIn("no release is marked Splunk Cloud compatible", err)
+
+    def test_cloud_combines_with_splunk_version(self):
+        self.serve_mixed_cloud_app()
+        rc, out, _ = self.run_cli("--cloud", "--splunk-version", "9.4", "9002")
+        self.assertEqual((rc, out), (0, self.url(9002, "2.0.0")))
+        rc, out, err = self.run_cli("--cloud", "--splunk-version", "8.0", "9002")
+        self.assertEqual((rc, out), (1, ""))
+        self.assertIn("no release is compatible with Splunk 8.0 among Splunk Cloud compatible releases", err)
+
+    def test_cloud_flag_is_reported_in_json(self):
+        self.serve_mixed_cloud_app()
+        rc, out, _ = self.run_cli("--format", "json", "9002", "4353")
+        self.assertEqual([i["cloud_compatible"] for i in json.loads(out)], [False, False])
+        rc, out, _ = self.run_cli("--format", "json", "--cloud", "9002")
+        self.assertIs(json.loads(out)[0]["cloud_compatible"], True)
+
+    def test_missing_cloud_field_is_null_and_excluded_by_cloud(self):
+        self.server.static(APP % 9003, 200, {"title": "Old App", "appid": "old"})
+        self.server.static(RELEASE % 9003, 200, [release("1.0.0", ["9.4"])])
+        rc, out, _ = self.run_cli("--format", "json", "9003")
+        self.assertIsNone(json.loads(out)[0]["cloud_compatible"])
+        rc, out, err = self.run_cli("--cloud", "9003")
+        self.assertEqual(rc, 1)
+
+    # --- Splunk version from a container image tag ------------------------
+
+    def test_image_tag_sets_the_splunk_version(self):
+        rc, out, err = self.run_cli("--image", "splunk/splunk:10.6.1-rhel9", "4353")
+        self.assertEqual((rc, out), (0, self.url(4353, "1.8.24")))
+        self.assertIn("note: using Splunk 10.6 from image splunk/splunk:10.6.1-rhel9", err)
+
+    def test_image_tag_matches_explicit_splunk_version(self):
+        _, explicit, _ = self.run_cli("--format", "json", "--splunk-version", "10.4", "4353")
+        _, via_image, _ = self.run_cli("--format", "json", "--image", "splunk/splunk:10.4", "4353")
+        self.assertEqual(json.loads(explicit), json.loads(via_image))
+
+    def test_image_with_registry_port_and_digest(self):
+        rc, out, err = self.run_cli("--image", "localhost:5000/splunk/splunk:9.4.2@sha256:abc123", "7931")
+        self.assertEqual((rc, out), (0, self.url(7931, "2.1.0")))
+        self.assertIn("using Splunk 9.4", err)
+
+    def test_image_without_a_version_tag_is_not_checked(self):
+        for image in ("splunk/splunk:latest", "splunk/splunk", "localhost:5000/splunk/splunk",
+                      "splunk/splunk:${SPLUNK_VERSION}", "splunk/splunk:33c3bf42cd73"):
+            with self.subTest(image=image):
+                rc, out, err = self.run_cli("--format", "json", "--image", image, "4353")
+                self.assertEqual(rc, 0, err)
+                self.assertEqual(json.loads(out)[0]["compatibility"], "not-checked")
+                self.assertIn("does not pin a Splunk version", err)
+
+    def test_quiet_suppresses_the_image_note(self):
+        rc, out, err = self.run_cli("-q", "--image", "splunk/splunk:9.4", "7931")
+        self.assertEqual((rc, err), (0, ""))
+
+    def test_image_and_splunk_version_together_are_a_usage_error(self):
+        rc, out, err = self.run_cli("--image", "splunk/splunk:9.4", "--splunk-version", "9.4", "7931")
+        self.assertEqual((rc, out), (2, ""))
+        self.assertIn("either --image or --splunk-version", err)
 
     def test_rejects_a_bad_splunk_version(self):
         rc, out, err = self.run_cli("--splunk-version", "latest", "4353")

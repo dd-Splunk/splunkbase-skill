@@ -29,7 +29,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field
 from typing import Any, Optional
 
-__version__ = "2.1.1"
+__version__ = "2.2.0"
 
 DEFAULT_BASE_URL = "https://splunkbase.splunk.com"
 USER_AGENT = f"splunkbase-skill/{__version__}"
@@ -104,6 +104,7 @@ class Resolved:
     published: Optional[str]
     splunk_versions: list = field(default_factory=list)
     compatibility: str = "not-checked"  # not-checked | compatible | unknown
+    cloud_compatible: Optional[bool] = None
     warnings: list = field(default_factory=list)
 
 
@@ -134,6 +135,17 @@ def normalize_splunk_version(value: str) -> str:
     return f"{match.group(1)}.{match.group(2)}"
 
 
+def splunk_version_from_image(ref: str) -> Optional[str]:
+    """'splunk/splunk:10.2.1-rhel9' -> '10.2'; None for latest, digests or variables."""
+    name = ref.strip().split("@", 1)[0].rsplit("/", 1)[-1]
+    if ":" not in name:
+        return None
+    try:
+        return normalize_splunk_version(name.split(":", 1)[1].split("-", 1)[0])
+    except ValueError:
+        return None
+
+
 def is_downloadable(release: dict) -> bool:
     """Some apps list a release whose name is the literal string 'null'."""
     name = release.get("name")
@@ -146,14 +158,15 @@ def _supported_range(release: dict) -> str:
 
 
 def select_release(
-    releases: list, splunk_version: Optional[str] = None
+    releases: list, splunk_version: Optional[str] = None, cloud_only: bool = False
 ) -> tuple[dict, str, list]:
     """Pick a release. Returns (release, compatibility, warnings).
 
     Splunkbase lists releases newest first. Without a Splunk version the first
     downloadable release wins. With one, the newest release that is not known
     to be incompatible wins: explicitly compatible, or compatibility unknown
-    (empty ``product_versions``, flagged with a warning).
+    (empty ``product_versions``, flagged with a warning). ``cloud_only`` first
+    drops releases not marked Splunk Cloud compatible.
     """
     usable = [r for r in releases if isinstance(r, dict) and is_downloadable(r)]
     if not usable:
@@ -161,6 +174,10 @@ def select_release(
             "no downloadable release (the release has no version name, "
             "so no download URL can be built)"
         )
+    if cloud_only:
+        usable = [r for r in usable if r.get("cloud_compatible") is True]
+        if not usable:
+            raise SplunkbaseError("no release is marked Splunk Cloud compatible")
     if splunk_version is None:
         return usable[0], "not-checked", []
     for release in usable:
@@ -177,7 +194,8 @@ def select_release(
                 ],
             )
     raise SplunkbaseError(
-        f"no release is compatible with Splunk {splunk_version} "
+        f"no release is compatible with Splunk {splunk_version}"
+        f"{' among Splunk Cloud compatible releases' if cloud_only else ''} "
         f"(latest is {usable[0]['name']}, which supports "
         f"{_supported_range(usable[0])})"
     )
@@ -193,7 +211,10 @@ def clean_text(value, limit: int = 120) -> str:
 
 
 def resolve_app(
-    client: Client, app_id: int, splunk_version: Optional[str] = None
+    client: Client,
+    app_id: int,
+    splunk_version: Optional[str] = None,
+    cloud_only: bool = False,
 ) -> Resolved:
     try:
         app = client.get_json(f"/api/v1/app/{app_id}")
@@ -216,7 +237,7 @@ def resolve_app(
         raise SplunkbaseError(f"{label}: no releases found")
 
     try:
-        release, compatibility, warnings = select_release(releases, splunk_version)
+        release, compatibility, warnings = select_release(releases, splunk_version, cloud_only)
     except SplunkbaseError as exc:
         raise SplunkbaseError(f"{label}: {exc}") from None
 
@@ -241,18 +262,24 @@ def resolve_app(
         published=release.get("published_datetime"),
         splunk_versions=list(release.get("product_versions") or []),
         compatibility=compatibility,
+        cloud_compatible=release["cloud_compatible"]
+        if isinstance(release.get("cloud_compatible"), bool)
+        else None,
         warnings=warnings,
     )
 
 
 def resolve_many(
-    client: Client, app_ids: list, splunk_version: Optional[str] = None
+    client: Client,
+    app_ids: list,
+    splunk_version: Optional[str] = None,
+    cloud_only: bool = False,
 ) -> list:
     """Resolve concurrently; returns [(app_id, Resolved | None, error | None)]."""
 
     def one(app_id: int) -> tuple:
         try:
-            return app_id, resolve_app(client, app_id, splunk_version), None
+            return app_id, resolve_app(client, app_id, splunk_version, cloud_only), None
         except SplunkbaseError as exc:
             return app_id, None, str(exc)
 
@@ -335,6 +362,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="only pick releases that support this Splunk version (e.g. 9.4, 10.2.1)",
     )
     parser.add_argument(
+        "--image",
+        metavar="REF",
+        help="take the Splunk version from a container image tag "
+        "(e.g. splunk/splunk:9.4.2); latest or untagged images are not checked",
+    )
+    parser.add_argument(
+        "--cloud",
+        action="store_true",
+        help="only pick releases marked Splunk Cloud compatible",
+    )
+    parser.add_argument(
         "--format",
         choices=("urls", "env", "json", "table"),
         help="urls: comma-separated (default); env: SPLUNK_APPS_URL=...; "
@@ -386,6 +424,19 @@ def main(argv: Optional[list] = None) -> int:
     if not args.apps:
         parser.error("give at least one app ID or use --search")
     splunk_version = None
+    if args.image and args.splunk_version:
+        parser.error("use either --image or --splunk-version, not both")
+    if args.image:
+        splunk_version = splunk_version_from_image(args.image)
+        if not args.quiet:
+            if splunk_version:
+                print(f"note: using Splunk {splunk_version} from image {args.image}", file=sys.stderr)
+            else:
+                print(
+                    f"warning: image {args.image} does not pin a Splunk version; "
+                    "compatibility not checked",
+                    file=sys.stderr,
+                )
     if args.splunk_version:
         try:
             splunk_version = normalize_splunk_version(args.splunk_version)
@@ -404,7 +455,7 @@ def main(argv: Optional[list] = None) -> int:
             continue
         app_ids.append(app_id)
 
-    outcomes = resolve_many(client, app_ids, splunk_version)
+    outcomes = resolve_many(client, app_ids, splunk_version, args.cloud)
     failed = [(app_id, error) for app_id, resolved, error in outcomes if error]
     resolved = [r for _, r, _ in outcomes if r]
 

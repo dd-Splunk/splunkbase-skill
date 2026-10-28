@@ -148,7 +148,8 @@ class SkillFileTests(unittest.TestCase):
 
     def test_skill_md_documents_every_cli_format_and_exit_code(self):
         text = self.skill_md.read_text()
-        for needle in ("--search", "--splunk-version", "--format env", "--partial", "SPLUNKBASE_PASSWORD"):
+        needles = ("--search", "--splunk-version", "--image", "--cloud", "--format env", "--partial")
+        for needle in needles + ("SPLUNKBASE_PASSWORD",):
             self.assertIn(needle, text)
 
     def test_license_file_matches_declared_license_and_ships(self):
@@ -165,6 +166,10 @@ class SkillFileTests(unittest.TestCase):
                 self.assertIn("personal project", text)
                 self.assertIn("production", text)
                 self.assertRegex(text, r"not endorsed or supported by cisco")
+
+    def test_kubernetes_is_routed_away_not_claimed(self):
+        self.assertNotIn("Kubernetes", self.meta["description"])
+        self.assertIn("Splunk Operator", self.skill_md.read_text())
 
     def test_no_hard_coded_release_versions_in_skill_instructions(self):
         # Versions rot; the skill must tell Claude to look them up instead.
