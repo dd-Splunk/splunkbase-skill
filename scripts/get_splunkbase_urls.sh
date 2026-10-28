@@ -13,7 +13,7 @@
 
 set -euo pipefail
 
-VERSION="2.1.0"
+VERSION="2.1.1"
 BASE_URL="${SPLUNKBASE_BASE_URL:-https://splunkbase.splunk.com}"
 BASE_URL="${BASE_URL%/}"
 TIMEOUT=10

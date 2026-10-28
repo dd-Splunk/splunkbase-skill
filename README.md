@@ -1,5 +1,11 @@
 # splunkbase-skill
 
+> [!WARNING]
+> **Personal project, not for production use.** This is not a Splunk or Cisco
+> product and is **not endorsed or supported by Cisco or Splunk**. It uses
+> Splunkbase's undocumented API and is provided "as is" under the
+> [Apache-2.0](LICENSE) license, without warranty. See [SUPPORT.md](SUPPORT.md).
+
 A Claude Skill that resolves Splunkbase apps to their current download URLs (optionally for a given Splunk version) and finds app IDs by name. Built for generating `SPLUNK_APPS_URL` in `splunk/splunk` Docker Compose setups.
 
 ## Install
