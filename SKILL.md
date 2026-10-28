@@ -1,9 +1,9 @@
 ---
 name: splunkbase-skill
-description: Resolve Splunkbase apps to their current download URLs, optionally for a specific Splunk version, and find app IDs by name. Use when the user wants the latest release URL of a Splunkbase app or add-on, needs SPLUNK_APPS_URL for splunk/splunk Docker or Docker Compose deployments, asks which Splunkbase release supports their Splunk version, or gives a splunkbase.splunk.com link or app ID. Route app lifecycle, upgrade, or removal advice and general product questions to their owning workflows.
+description: Resolve Splunkbase apps to their current download URLs, optionally for a specific Splunk version, and find app IDs by name. Use when the user wants the latest release URL of a Splunkbase app or add-on, needs SPLUNK_APPS_URL for splunk/splunk Docker or Docker Compose deployments, asks which Splunkbase release supports their Splunk version, wants to know which Splunkbase release URLs pinned in a .env or compose file are out of date, or gives a splunkbase.splunk.com link or app ID. Route app lifecycle, upgrade, or removal advice and general product questions to their owning workflows.
 license: Apache-2.0
 metadata:
-  version: 2.2.0
+  version: 2.3.0
   splunk:
     domain: splunkbase-release-resolution
     products:
@@ -19,6 +19,7 @@ metadata:
       - SPLUNK_APPS_URL for Docker Compose
       - which Splunkbase release supports my Splunk version
       - find the Splunkbase app ID for an app name
+      - which pinned Splunkbase apps in my compose file or .env are outdated
       - splunkbase.splunk.com app link
     not-for:
       - installing, upgrading, disabling, or removing an app in a deployment
@@ -30,6 +31,7 @@ metadata:
       - exact release URLs taken from the live Splunkbase API
       - per-app version and Splunk compatibility
       - ready-to-use SPLUNK_APPS_URL value or compose snippet
+      - per-app current, outdated or unsupported status for pinned release URLs
 ---
 
 # Splunkbase release URLs
@@ -96,9 +98,26 @@ Route elsewhere, and say so, when the request is really about:
    so resolve the variable from the file or `.env`, or ask, and use
    `--splunk-version`. `--image` and `--splunk-version` cannot be combined.
    Without Python, `scripts/get_splunkbase_urls.sh` gives the same results
-   (no `--search`).
+   (no `--search`, no `--check`).
 
-3. **Report.** Give the URLs or the finished snippet, the resolved version of
+3. **Check what is outdated** (when the user already has pinned URLs). Point
+   `--check` at the `.env` or compose file that holds `SPLUNK_APPS_URL`:
+
+   ```bash
+   python3 scripts/splunkbase_urls.py --check .env --splunk-version 9.4
+   python3 scripts/splunkbase_urls.py --check docker-compose.yml          # reads the splunk/splunk image: tag
+   ```
+
+   It compares each pinned Splunkbase release with the newest release that fits
+   the Splunk version, and reports `current`, `outdated` (a newer eligible release
+   exists), `unsupported` (the pin is newer than any release that fits the Splunk
+   version or `--cloud`) or `unknown` (the pin is not in Splunkbase's list). It
+   never edits the file. To produce the updated value, run step 2 for the
+   outdated IDs and show the user the new line. Only literal `SPLUNK_APPS_URL`
+   lines on one line are read; if the compose file only references
+   `${SPLUNK_APPS_URL}`, check the `.env` file instead.
+
+4. **Report.** Give the URLs or the finished snippet, the resolved version of
    each app, and every warning from stderr. Use the table below.
 
 ## Output and exit codes
@@ -108,6 +127,7 @@ Route elsewhere, and say so, when the request is really about:
 | 0 | All apps resolved | Use stdout; read stderr for warnings. |
 | 1 | At least one app failed; stdout is empty | Report the per-app errors. Do not guess URLs. `--partial` prints the apps that did resolve. |
 | 2 | Bad arguments | Fix the invocation. |
+| 3 | `--check` only: at least one pin is not `current` | Report the table; this is a finding, not a failure. |
 
 Answer shape for each app: ID and title, resolved version, `compatibility`
 (`compatible`, `unknown`, `not-checked`), any warning, then the URL. Treat
@@ -115,8 +135,11 @@ Answer shape for each app: ID and title, resolved version, `compatibility`
 
 ## Boundaries
 
-- Read-only: the script only reads public Splunkbase metadata. It never logs
-  in, downloads packages or changes anything.
+- Read-only: the script only reads public Splunkbase metadata (and, for
+  `--check`, the one local file it is pointed at). It never logs in, downloads
+  packages or changes anything, including that file.
+- A newer release is a fact, not advice to upgrade. Whether and how to upgrade
+  belongs to the app lifecycle workflow or the product documentation.
 - Never ask for, accept or echo Splunkbase credentials in the conversation.
   Refer to the environment variables `SPLUNKBASE_USERNAME` and
   `SPLUNKBASE_PASSWORD` or an untracked `.env` file.
@@ -132,6 +155,7 @@ Answer shape for each app: ID and title, resolved version, `compatibility`
 - "Give me SPLUNK_APPS_URL for apps 4353 and 7931 on Splunk 9.4."
 - "What is the Splunkbase ID for the Splunk MCP Server, and what is its latest release?"
 - "Which release of this app still supports Splunk 9.2?" (`--splunk-version 9.2 --format json`)
+- "Are the Splunkbase apps pinned in my .env still the latest?" (`--check .env`)
 - "Add these three Splunkbase apps to my docker-compose.yml."
   Read [references/docker-compose.md](references/docker-compose.md).
 
@@ -150,6 +174,8 @@ Answer shape for each app: ID and title, resolved version, `compatibility`
   missing or a variable; compatibility was not checked. Find the real version.
 - **`no release is marked Splunk Cloud compatible`:** `--cloud` found no release
   flagged `cloud_compatible`; the flag is the app author's, so verify on Splunkbase.
+- **`no Splunkbase release URLs found in a SPLUNK_APPS_URL line`:** the file has
+  no literal pinned URLs (variable reference, multi-line value, another file).
 - **Reproducibility:** `latest` moves. Suggest pinning the resolved versions
   and re-running on upgrades.
 

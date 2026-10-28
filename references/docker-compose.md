@@ -53,6 +53,10 @@ Notes:
   images `SPLUNK_GENERAL_TERMS: --accept-sgt-current-at-splunk-com` is required
   too. Accepting is the user's decision; do not add it silently.
 - Re-run the script when upgrading; the URLs pin exact versions.
+- To see what has moved since, run `python3 scripts/splunkbase_urls.py --check .env`
+  (add `--splunk-version`, or point it at the compose file so it reads the `image:`
+  tag). It reports each pin as `current`, `outdated`, `unsupported` or `unknown`
+  and exits 3 if any is not current, so it also works in a scheduled job.
 
 ## Troubleshooting
 
