@@ -4,6 +4,19 @@ Versions follow [Semantic Versioning](https://semver.org). The newest entry must
 match `metadata.version` in `SKILL.md` and `__version__`/`VERSION` in both
 scripts (checked by `tests/test_skill_package.py`).
 
+## [2.2.0] - 2026-10-28
+
+### Added
+
+- `--image REF` takes the Splunk version from a container image tag (`splunk/splunk:9.4.2`, `10.6.1-rhel9`, registry ports and digests handled). `latest`, untagged images and unexpanded variables produce a warning and skip the compatibility check; combining it with `--splunk-version` is a usage error.
+- `--cloud` restricts the choice to releases marked Splunk Cloud compatible, and the JSON output gains a `cloud_compatible` field (`true`, `false` or `null`). Both scripts, with contract tests for each.
+- Live API check that `cloud_compatible` is still a boolean on releases.
+
+### Fixed
+
+- The skill description claimed Kubernetes support. It only produces `SPLUNK_APPS_URL` values for the `splunk/splunk` image under Docker or Docker Compose; the Splunk Operator installs apps from object storage. The description, routing rules and Docker reference now say so.
+- Docker reference verified against docker-splunk, Docker Hub and the Splunk Operator docs: `SPLUNK_GENERAL_TERMS` is required only from 10.x images, `linux/amd64` is the only published architecture, and an unverified claim about `@splunk.com` logins is removed.
+
 ## [2.1.1] - 2026-10-28
 
 ### Changed

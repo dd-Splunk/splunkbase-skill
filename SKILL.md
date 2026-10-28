@@ -1,9 +1,9 @@
 ---
 name: splunkbase-skill
-description: Resolve Splunkbase apps to their current download URLs, optionally for a specific Splunk version, and find app IDs by name. Use when the user wants the latest release URL of a Splunkbase app or add-on, needs SPLUNK_APPS_URL for splunk/splunk Docker Compose or Kubernetes deployments, asks which Splunkbase release supports their Splunk version, or gives a splunkbase.splunk.com link or app ID. Route app lifecycle, upgrade, or removal advice and general product questions to their owning workflows.
+description: Resolve Splunkbase apps to their current download URLs, optionally for a specific Splunk version, and find app IDs by name. Use when the user wants the latest release URL of a Splunkbase app or add-on, needs SPLUNK_APPS_URL for splunk/splunk Docker or Docker Compose deployments, asks which Splunkbase release supports their Splunk version, or gives a splunkbase.splunk.com link or app ID. Route app lifecycle, upgrade, or removal advice and general product questions to their owning workflows.
 license: Apache-2.0
 metadata:
-  version: 2.1.1
+  version: 2.2.0
   splunk:
     domain: splunkbase-release-resolution
     products:
@@ -22,6 +22,7 @@ metadata:
       - splunkbase.splunk.com app link
     not-for:
       - installing, upgrading, disabling, or removing an app in a deployment
+      - Splunk Operator for Kubernetes app installs (its App Framework reads packages from object storage)
       - app lifecycle, compatibility readiness, or removal-safety assessment
       - general Splunk product questions
       - downloading app packages or handling Splunkbase credentials
@@ -63,7 +64,9 @@ Route elsewhere, and say so, when the request is really about:
   deployment, AppInspect results, or lifecycle planning: use an app and
   add-on lifecycle skill or the product documentation;
 - general Splunk product questions;
-- performing the installation or download: this skill only resolves URLs.
+- performing the installation or download: this skill only resolves URLs;
+- Kubernetes with the Splunk Operator: its App Framework installs from S3, Azure
+  Blob or GCP buckets, not from Splunkbase URLs, so `SPLUNK_APPS_URL` does not apply.
 
 ## Workflow
 
@@ -81,10 +84,17 @@ Route elsewhere, and say so, when the request is really about:
    python3 scripts/splunkbase_urls.py 4353 7931                       # comma-separated URLs
    python3 scripts/splunkbase_urls.py --format env 4353 7931          # SPLUNK_APPS_URL=...
    python3 scripts/splunkbase_urls.py --format json --splunk-version 9.4 4353
+   python3 scripts/splunkbase_urls.py --image splunk/splunk:9.4.2 4353 7931   # version from the image tag
+   python3 scripts/splunkbase_urls.py --cloud 4353                    # only Splunk Cloud compatible releases
    ```
 
-   Pass `--splunk-version` whenever the Splunk version is known, so the script
-   picks the newest release that supports it rather than the newest overall.
+   Pass the Splunk version whenever it is known, so the script picks the newest
+   release that supports it rather than the newest overall. When a compose file
+   or `docker run` command names the image, pass it with `--image`; the script
+   reads the tag (`9.4.2` becomes 9.4). A tag such as `latest`, a digest or an
+   unexpanded `${VARIABLE}` pins nothing: the script warns and skips the check,
+   so resolve the variable from the file or `.env`, or ask, and use
+   `--splunk-version`. `--image` and `--splunk-version` cannot be combined.
    Without Python, `scripts/get_splunkbase_urls.sh` gives the same results
    (no `--search`).
 
@@ -136,6 +146,10 @@ Answer shape for each app: ID and title, resolved version, `compatibility`
   later or have the user run the command.
 - **URL later returns 401/403 in the container:** credentials or licence
   acceptance on the Splunkbase account, see the Docker reference.
+- **`warning: image ... does not pin a Splunk version`:** the tag is `latest`,
+  missing or a variable; compatibility was not checked. Find the real version.
+- **`no release is marked Splunk Cloud compatible`:** `--cloud` found no release
+  flagged `cloud_compatible`; the flag is the app author's, so verify on Splunkbase.
 - **Reproducibility:** `latest` moves. Suggest pinning the resolved versions
   and re-running on upgrades.
 

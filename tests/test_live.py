@@ -27,7 +27,7 @@ ANCHORS = {
     4353: "Config Explorer",
     7931: "Splunk MCP Server",
 }
-RELEASE_KEYS = {"name", "published_datetime", "product_versions", "filename", "platform"}
+RELEASE_KEYS = {"name", "published_datetime", "product_versions", "filename", "platform", "cloud_compatible"}
 
 
 def get(path):
@@ -59,6 +59,12 @@ class LiveApiTests(unittest.TestCase):
                 releases = get("/api/v1/app/%d/release" % app_id)
                 newest = max(releases, key=lambda r: r["published_datetime"])
                 self.assertEqual(releases[0]["name"], newest["name"])
+
+    def test_cloud_flag_is_a_boolean_on_releases(self):
+        for app_id in ANCHORS:
+            with self.subTest(app_id=app_id):
+                for item in get("/api/v1/app/%d/release" % app_id):
+                    self.assertIsInstance(item["cloud_compatible"], bool)
 
     def test_search_returns_ids_and_titles(self):
         data = get("/api/v1/app/?query=aws&limit=5")

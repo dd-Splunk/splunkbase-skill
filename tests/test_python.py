@@ -57,7 +57,41 @@ class CleanTextTests(unittest.TestCase):
         self.assertEqual(sb.clean_text(123), "123")
 
 
+class ImageTagTests(unittest.TestCase):
+    def test_splunk_version_from_image(self):
+        cases = {
+            "splunk/splunk:9.4": "9.4",
+            "splunk/splunk:9.4.2": "9.4",
+            "splunk/splunk:10.6.1.1-rhel9": "10.6",
+            "docker.io/splunk/universalforwarder:10.2-rhel9": "10.2",
+            "localhost:5000/splunk/splunk:9.4.2@sha256:abc": "9.4",
+            "  splunk/splunk:9.4  ": "9.4",
+            "splunk/splunk:latest": None,
+            "splunk/splunk": None,
+            "localhost:5000/splunk/splunk": None,
+            "splunk/splunk:${SPLUNK_VERSION:-9.4}": None,
+            "splunk/splunk:33c3bf42cd73": None,
+            "splunk/splunk@sha256:abc": None,
+            "": None,
+        }
+        for ref, expected in cases.items():
+            with self.subTest(ref=ref):
+                self.assertEqual(sb.splunk_version_from_image(ref), expected)
+
+
 class SelectReleaseTests(unittest.TestCase):
+    def test_cloud_only_filters_before_version_matching(self):
+        releases = [
+            {"name": "3", "product_versions": ["10.0"], "cloud_compatible": False},
+            {"name": "2", "product_versions": ["10.0"], "cloud_compatible": True},
+        ]
+        self.assertEqual(sb.select_release(releases, None, cloud_only=True)[0]["name"], "2")
+        self.assertEqual(sb.select_release(releases, "10.0")[0]["name"], "3")
+
+    def test_cloud_only_requires_an_explicit_true(self):
+        with self.assertRaisesRegex(sb.SplunkbaseError, "Cloud compatible"):
+            sb.select_release([{"name": "1"}, {"name": "2", "cloud_compatible": None}], cloud_only=True)
+
     def test_skips_leading_releases_without_a_usable_name(self):
         releases = [{"name": "null"}, {"name": ""}, {"name": None}, {"name": "1.0.0"}]
         chosen, compat, _ = sb.select_release(releases)

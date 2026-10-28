@@ -13,7 +13,7 @@
 
 set -euo pipefail
 
-VERSION="2.1.1"
+VERSION="2.2.0"
 BASE_URL="${SPLUNKBASE_BASE_URL:-https://splunkbase.splunk.com}"
 BASE_URL="${BASE_URL%/}"
 TIMEOUT=10
@@ -31,6 +31,10 @@ APP is a Splunkbase app ID or app page URL (commas allowed: 4353,7931).
 Options:
   --splunk-version VER  only pick releases supporting this Splunk version
                         (e.g. 9.4 or 10.2.1)
+  --image REF           take the Splunk version from a container image tag
+                        (e.g. splunk/splunk:9.4.2); latest or untagged
+                        images are not checked
+  --cloud               only pick releases marked Splunk Cloud compatible
   --format FMT          urls (default): comma-separated
                         env: SPLUNK_APPS_URL=...
                         json
@@ -100,16 +104,19 @@ def tidy: gsub("[\\p{Cc}\\p{Zl}\\p{Zp}]+"; " ") | gsub("\\s+"; " ") | gsub("^ | 
 def supported: if length > 0 then "\(.[-1]) to \(.[0])" else "unknown" end;
 ($rel | map(select(type == "object" and (.name | type) == "string"
         and ((.name | ascii_downcase | clean) as $n
-             | ($n == "" or $n == "null" or $n == "none") | not)))) as $usable
-| if ($usable | length) == 0 then
+             | ($n == "" or $n == "null" or $n == "none") | not)))) as $downloadable
+| (if $cloud == "1" then $downloadable | map(select(.cloud_compatible == true)) else $downloadable end) as $usable
+| if ($downloadable | length) == 0 then
     {error: "no downloadable release (the release has no version name, so no download URL can be built)"}
+  elif ($usable | length) == 0 then
+    {error: "no release is marked Splunk Cloud compatible"}
   else
     (if $sv == "" then {r: $usable[0], c: "not-checked", w: []}
      else
        ([ $usable[] | select(((.product_versions // []) | any(. == $sv))
                              or ((.product_versions // []) | length) == 0) ] | .[0]) as $pick
        | if $pick == null then
-           {error: "no release is compatible with Splunk \($sv) (latest is \($usable[0].name), which supports \(($usable[0].product_versions // []) | supported))"}
+           {error: "no release is compatible with Splunk \($sv)\(if $cloud == "1" then " among Splunk Cloud compatible releases" else "" end) (latest is \($usable[0].name), which supports \(($usable[0].product_versions // []) | supported))"}
          elif ($pick.product_versions // []) | any(. == $sv) then
            {r: $pick, c: "compatible", w: []}
          else
@@ -127,6 +134,7 @@ def supported: if length > 0 then "\(.[-1]) to \(.[0])" else "unknown" end;
            published: (.r.published_datetime // null),
            splunk_versions: (.r.product_versions // []),
            compatibility: .c,
+           cloud_compatible: (if (.r.cloud_compatible | type) == "boolean" then .r.cloud_compatible else null end),
            warnings: (.w
              + (if $app.is_archived then ["app is archived on Splunkbase"] else [] end)
              + (if ($v | test("^[0-9][A-Za-z0-9_.+-]*$")) then [] else
@@ -134,10 +142,10 @@ def supported: if length > 0 then "\(.[-1]) to \(.[0])" else "unknown" end;
       end
   end'
 
-# resolve_app ID SPLUNK_VERSION -> one compact JSON object on stdout.
+# resolve_app ID SPLUNK_VERSION CLOUD -> one compact JSON object on stdout.
 # On failure prints an "error: ..." line to stderr and returns 1.
 resolve_app() {
-    local id="$1" sv="$2" app rel rc title label out
+    local id="$1" sv="$2" cloud="$3" app rel rc title label out
     rc=0
     app="$(fetch_json "${BASE_URL}/api/v1/app/${id}")" || rc=$?
     if [ "$rc" = 2 ]; then
@@ -164,7 +172,7 @@ resolve_app() {
     fi
 
     out="$(jq -c --argjson app "$app" --argjson rel "$rel" --arg id "$id" \
-        --arg sv "$sv" --arg base "$BASE_URL" "$JQ_RESOLVE" <<<null)"
+        --arg sv "$sv" --arg cloud "$cloud" --arg base "$BASE_URL" "$JQ_RESOLVE" <<<null)"
     if jq -e 'has("error")' <<<"$out" >/dev/null; then
         echo "error: ${label}: $(jq -r .error <<<"$out")" >&2
         return 1
@@ -174,6 +182,8 @@ resolve_app() {
 
 FORMAT="urls"
 SPLUNK_VERSION=""
+IMAGE=""
+CLOUD=0
 PARTIAL=0
 QUIET=0
 RAW_APPS=()
@@ -185,6 +195,10 @@ while [ $# -gt 0 ]; do
         --splunk-version)
             [ $# -ge 2 ] || die_usage "--splunk-version needs a value"
             SPLUNK_VERSION="$2"; shift 2 ;;
+        --image)
+            [ $# -ge 2 ] || die_usage "--image needs a value"
+            IMAGE="$2"; shift 2 ;;
+        --cloud) CLOUD=1; shift ;;
         --format)
             [ $# -ge 2 ] || die_usage "--format needs a value"
             FORMAT="$2"; shift 2 ;;
@@ -202,8 +216,23 @@ case "$FORMAT" in
 esac
 [ ${#RAW_APPS[@]} -gt 0 ] || die_usage "give at least one app ID"
 
-if [ -n "$SPLUNK_VERSION" ]; then
-    sv_re='^([0-9]+)\.([0-9]+)(\.[A-Za-z0-9]+)*$'
+sv_re='^([0-9]+)\.([0-9]+)(\.[A-Za-z0-9]+)*$'
+if [ -n "$IMAGE" ]; then
+    [ -z "$SPLUNK_VERSION" ] || die_usage "use either --image or --splunk-version, not both"
+    image_name="${IMAGE%%@*}"
+    image_name="${image_name##*/}"
+    image_tag=""
+    if [[ "$image_name" == *:* ]]; then
+        image_tag="${image_name#*:}"
+        image_tag="${image_tag%%-*}"
+    fi
+    if [[ "$image_tag" =~ $sv_re ]]; then
+        SPLUNK_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+        [ "$QUIET" = 1 ] || echo "note: using Splunk ${SPLUNK_VERSION} from image ${IMAGE}" >&2
+    else
+        warn "image ${IMAGE} does not pin a Splunk version; compatibility not checked"
+    fi
+elif [ -n "$SPLUNK_VERSION" ]; then
     if [[ "$SPLUNK_VERSION" =~ $sv_re ]]; then
         SPLUNK_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
     else
@@ -238,7 +267,7 @@ RESULTS="$(mktemp)"
 trap 'rm -f "$RESULTS"' EXIT
 failed=0
 for id in "${APP_IDS[@]}"; do
-    if line="$(resolve_app "$id" "$SPLUNK_VERSION")"; then
+    if line="$(resolve_app "$id" "$SPLUNK_VERSION" "$CLOUD")"; then
         echo "$line" >>"$RESULTS"
     else
         failed=1
