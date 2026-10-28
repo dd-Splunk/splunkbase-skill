@@ -1,0 +1,23 @@
+[
+  {
+    "id": 24868,
+    "app": 2941,
+    "name": "null",
+    "product": {
+      "name": "splunk",
+      "display_name": "Splunk"
+    },
+    "CIM_versions": [],
+    "product_versions": [],
+    "created_datetime": "2022-04-11T19:24:57.436455Z",
+    "published_datetime": "2022-04-15T17:00:00Z",
+    "size": 0,
+    "filename": "splunk-user-behavior-analytics-splunk-uba_null",
+    "platform": "independent",
+    "install_method_single": "unknown",
+    "install_method_distributed": "unknown",
+    "fedramp_validation": "no",
+    "fips_compatibility": false,
+    "cloud_compatible": false
+  }
+]

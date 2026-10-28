@@ -1,0 +1,34 @@
+# Changelog
+
+Versions follow [Semantic Versioning](https://semver.org). The newest entry must
+match `metadata.version` in `SKILL.md` and `__version__`/`VERSION` in both
+scripts (checked by `tests/test_skill_package.py`).
+
+## [2.0.0] - 2026-10-28
+
+### Breaking
+
+- Scripts moved to `scripts/` (`scripts/splunkbase_urls.py`, `scripts/get_splunkbase_urls.sh`). The Python module is now a CLI with a small importable API; the old root-level functions are gone.
+- Releases are now cut from `v*` tags. The per-push timestamp releases and the force-moved `latest` tag are no longer produced; install from `releases/latest/download/splunkbase-skill.skill`.
+
+### Added
+
+- `--splunk-version` selects the newest release compatible with a Splunk version.
+- `--search` finds app IDs by name; `--format urls|env|json|table`; `--partial`; `--quiet`.
+- App page URLs and comma/space-separated lists accepted as input; concurrent lookups with stable output order.
+- Retries with backoff on 429/5xx/network errors; per-request timeout.
+- Warnings for archived apps, unknown compatibility and platform-specific release names.
+- Offline test suite (fake Splunkbase with real fixtures, one contract suite for both implementations), package checks, and a weekly live API check.
+- `references/api.md` and `references/docker-compose.md`.
+
+### Fixed
+
+- Releases named `null` no longer produce `/release/null/download/` URLs.
+- Release names with spaces are percent-encoded.
+- Any failure now exits non-zero with no partial URL list on stdout (unless `--partial`).
+- `SKILL.md` no longer hard-codes app versions, and its API description matches the real responses.
+- Docker example no longer hard-codes an `@splunk.com` username.
+
+## 1.0.0
+
+Initial version (unversioned history before 2.0.0).

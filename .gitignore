@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.DS_Store
+*.skill
+.env
+.venv/
+.ruff_cache/

@@ -1,0 +1,118 @@
+[
+  {
+    "id": 121902,
+    "app": 1606,
+    "name": "3.2.0 Windows 64 bit",
+    "product": {
+      "name": "splunk",
+      "display_name": "Splunk"
+    },
+    "CIM_versions": [],
+    "product_versions": [
+      "10.4",
+      "10.3",
+      "10.2",
+      "10.1",
+      "10.0",
+      "9.4",
+      "9.3"
+    ],
+    "created_datetime": "2026-06-15T09:23:37.123780Z",
+    "published_datetime": "2026-06-15T09:23:37Z",
+    "size": 16316576,
+    "filename": "splunk-odbc_320-windows-64-bit.tgz",
+    "platform": "independent",
+    "install_method_single": "rejected",
+    "install_method_distributed": "rejected",
+    "fedramp_validation": "no",
+    "fips_compatibility": false,
+    "cloud_compatible": false
+  },
+  {
+    "id": 38936,
+    "app": 1606,
+    "name": "3.1.2 MacOS (Big Sur 11.7 and Monterey)",
+    "product": {
+      "name": "splunk",
+      "display_name": "Splunk"
+    },
+    "CIM_versions": [],
+    "product_versions": [
+      "10.1",
+      "10.0",
+      "9.4",
+      "9.3",
+      "9.2",
+      "9.1",
+      "9.0"
+    ],
+    "created_datetime": "2025-08-05T16:35:22.153668Z",
+    "published_datetime": "2025-08-05T16:36:58.803025Z",
+    "size": 17425589,
+    "filename": "splunk-odbc_312-macos-big-sur-117-and-monterey.dmg",
+    "platform": "independent",
+    "install_method_single": "rejected",
+    "install_method_distributed": "rejected",
+    "fedramp_validation": "no",
+    "fips_compatibility": false,
+    "cloud_compatible": false
+  },
+  {
+    "id": 38935,
+    "app": 1606,
+    "name": "3.1.2 MacOS (Catalina and Big Sur 11.6)",
+    "product": {
+      "name": "splunk",
+      "display_name": "Splunk"
+    },
+    "CIM_versions": [],
+    "product_versions": [
+      "10.1",
+      "10.0",
+      "9.4",
+      "9.3",
+      "9.2",
+      "9.1",
+      "9.0"
+    ],
+    "created_datetime": "2025-08-05T16:33:14.259383Z",
+    "published_datetime": "2025-08-05T16:34:29.172159Z",
+    "size": 17526043,
+    "filename": "splunk-odbc_312-macos-catalina-and-big-sur-116.dmg",
+    "platform": "independent",
+    "install_method_single": "rejected",
+    "install_method_distributed": "rejected",
+    "fedramp_validation": "no",
+    "fips_compatibility": false,
+    "cloud_compatible": false
+  },
+  {
+    "id": 38934,
+    "app": 1606,
+    "name": "3.1.2 Windows",
+    "product": {
+      "name": "splunk",
+      "display_name": "Splunk"
+    },
+    "CIM_versions": [],
+    "product_versions": [
+      "10.1",
+      "10.0",
+      "9.4",
+      "9.3",
+      "9.2",
+      "9.1",
+      "9.0"
+    ],
+    "created_datetime": "2025-08-05T16:28:43.062374Z",
+    "published_datetime": "2025-08-05T16:31:42.442635Z",
+    "size": 28597011,
+    "filename": "splunk-odbc_312-windows.zip",
+    "platform": "windows",
+    "install_method_single": "rejected",
+    "install_method_distributed": "rejected",
+    "fedramp_validation": "no",
+    "fips_compatibility": false,
+    "cloud_compatible": false
+  }
+]
