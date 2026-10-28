@@ -1,0 +1,4 @@
+interface:
+  display_name: "Splunkbase Release URLs"
+  short_description: "Resolve Splunkbase apps to current download URLs"
+  default_prompt: "Use $splunkbase-skill to resolve these Splunkbase apps to their current release URLs for my Splunk version and build SPLUNK_APPS_URL."

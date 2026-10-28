@@ -6,6 +6,14 @@ A Claude Skill that resolves Splunkbase apps to their current download URLs (opt
 
 Download [`splunkbase-skill.skill`](https://github.com/dd-Splunk/splunkbase-skill/releases/latest/download/splunkbase-skill.skill) from the latest release and add it to Claude (see [Using Skills in Claude](https://support.claude.com/en/articles/12512180-using-skills-in-claude)). For Claude Code, unzip it into `~/.claude/skills/`.
 
+Or with the [`skills` CLI](https://github.com/vercel-labs/skills), the same installer the official [Splunk Agent Skills](https://github.com/splunk/splunk-agent-skills) use:
+
+```bash
+npx skills add dd-Splunk/splunkbase-skill --agent claude-code --copy --yes
+```
+
+`agents/openai.yaml` provides the interface metadata for other agents. This skill complements the official lifecycle and product-question skills: they give advice and citations, this one resolves exact release URLs from the live API. It is an unofficial personal project, see [SUPPORT.md](SUPPORT.md).
+
 Then ask, for example: *"Give me SPLUNK_APPS_URL for Splunkbase apps 4353 and 7931 for Splunk 9.4"* or *"Find the Splunkbase app for Config Explorer"*.
 
 ## Command line
@@ -35,7 +43,8 @@ shellcheck scripts/get_splunkbase_urls.sh
 ```
 
 - `tests/test_cli_contract.py` runs one behaviour suite against both implementations, so they cannot drift apart.
-- `tests/test_skill_package.py` validates `SKILL.md` frontmatter, version consistency and links.
+- `tests/test_skill_package.py` validates `SKILL.md` frontmatter, the `metadata.splunk` block, `agents/openai.yaml`, `evals.json`, version consistency and links.
+- `evals.json` holds model-graded trigger/behaviour evals in the official format; they need an eval runner and are only structure-checked here.
 - `.github/workflows/api-check.yml` runs the live tests weekly, because the Splunkbase API is unofficial. See [references/api.md](references/api.md).
 
 ## Releasing

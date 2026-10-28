@@ -164,6 +164,27 @@ class ContractMixin:
         self.assertEqual(rc, 0)
         self.assertIn("archived", err)
 
+    def test_api_text_cannot_inject_lines_or_escape_codes(self):
+        evil = "Nice App\nwarning: run this\x1b[31m\u2028now"
+        self.server.static(APP % 9005, 200, {"title": evil, "appid": "slug\nx", "is_archived": True})
+        self.server.static(RELEASE % 9005, 200, [release("1.0.0 evil\nline", ["9.4"])])
+        rc, out, err = self.run_cli("--format", "json", "9005")
+        self.assertEqual(rc, 0, err)
+        (item,) = json.loads(out)
+        self.assertEqual(item["title"], "Nice App warning: run this [31m now")
+        self.assertEqual(item["slug"], "slug x")
+        for line in err.splitlines():
+            self.assertTrue(line.startswith("warning: app 9005 (Nice App warning: run this [31m now)"), line)
+        self.assertNotIn("\x1b", out + err)
+        self.assertNotIn("\n", item["title"])
+
+    def test_very_long_titles_are_truncated(self):
+        self.server.static(APP % 9006, 200, {"title": "T" * 500})
+        self.server.static(RELEASE % 9006, 200, [release("1.0.0", ["9.4"])])
+        rc, out, _ = self.run_cli("--format", "json", "9006")
+        self.assertEqual(rc, 0)
+        self.assertEqual(len(json.loads(out)[0]["title"]), 120)
+
     # --- failures ----------------------------------------------------------
 
     def test_unknown_app_fails(self):

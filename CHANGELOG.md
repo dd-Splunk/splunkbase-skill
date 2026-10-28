@@ -4,6 +4,22 @@ Versions follow [Semantic Versioning](https://semver.org). The newest entry must
 match `metadata.version` in `SKILL.md` and `__version__`/`VERSION` in both
 scripts (checked by `tests/test_skill_package.py`).
 
+## [2.1.0] - 2026-10-28
+
+Aligned with the conventions of the official [splunk-agent-skills](https://github.com/splunk/splunk-agent-skills).
+
+### Added
+
+- `SKILL.md`: `metadata.splunk` block (domain, products, entities, triggers, not-for, outcomes) plus Prerequisites, When to Use / routing, Boundaries, Examples and Troubleshooting sections.
+- `agents/openai.yaml` interface file for non-Claude agents.
+- `evals.json`: trigger (positive/negative) and behaviour evals in the official format.
+- `references/sources.md`, `SECURITY.md`, `SUPPORT.md`.
+- Install with `npx skills add dd-Splunk/splunkbase-skill`.
+
+### Security
+
+- API-supplied text (titles, slugs, release names in warnings) is stripped of control characters and truncated to 120 characters in both scripts, so a hostile listing cannot inject lines or terminal escape codes into output.
+
 ## [2.0.0] - 2026-10-28
 
 ### Breaking

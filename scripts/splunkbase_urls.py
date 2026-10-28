@@ -29,7 +29,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field
 from typing import Any, Optional
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 DEFAULT_BASE_URL = "https://splunkbase.splunk.com"
 USER_AGENT = f"splunkbase-skill/{__version__}"
@@ -183,6 +183,15 @@ def select_release(
     )
 
 
+_CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]+")
+
+
+def clean_text(value, limit: int = 120) -> str:
+    """Make API-supplied text safe to print: no control characters, one line, bounded."""
+    text = " ".join(_CONTROL.sub(" ", str(value)).split())
+    return text if len(text) <= limit else text[: limit - 1] + "\u2026"
+
+
 def resolve_app(
     client: Client, app_id: int, splunk_version: Optional[str] = None
 ) -> Resolved:
@@ -194,7 +203,7 @@ def resolve_app(
         raise SplunkbaseError(f"app {app_id}: {exc}") from None
     if not isinstance(app, dict):
         raise SplunkbaseError(f"app {app_id}: unexpected app response")
-    title = app.get("title") or "Unknown"
+    title = clean_text(app.get("title") or "Unknown")
     label = f"app {app_id} ({title})"
 
     try:
@@ -216,7 +225,7 @@ def resolve_app(
         warnings.append("app is archived on Splunkbase")
     if not re.fullmatch(r"[0-9][A-Za-z0-9_.+-]*", version):
         warnings.append(
-            f'release name "{version}" has extra text; it may be a platform-specific '
+            f'release name "{clean_text(version)}" has extra text; it may be a platform-specific '
             "build, check it is the one you need"
         )
     url = (
@@ -226,7 +235,7 @@ def resolve_app(
     return Resolved(
         app_id=app_id,
         title=title,
-        slug=app.get("appid"),
+        slug=clean_text(app["appid"]) if app.get("appid") else None,
         version=version,
         url=url,
         published=release.get("published_datetime"),
@@ -259,8 +268,8 @@ def search_apps(client: Client, query: str, limit: int = 10) -> list:
     return [
         {
             "app_id": r.get("uid"),
-            "title": r.get("title"),
-            "slug": r.get("appid"),
+            "title": clean_text(r["title"]) if r.get("title") else None,
+            "slug": clean_text(r["appid"]) if r.get("appid") else None,
             "type": r.get("type"),
             "archived": bool(r.get("is_archived")),
         }
