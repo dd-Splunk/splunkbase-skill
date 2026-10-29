@@ -18,8 +18,9 @@ services:
     image: splunk/splunk:${SPLUNK_VERSION:-9.4}
     platform: linux/amd64          # the image has no arm64 build; needed on Apple silicon
     environment:
-      SPLUNK_GENERAL_TERMS: --accept-sgt-current-at-splunk-com   # required by 10.x images, ignored by 9.x
-      SPLUNK_START_ARGS: --accept-license
+      # Required to start, and the user's decision to accept (see Notes); add only once they have:
+      # SPLUNK_GENERAL_TERMS: --accept-sgt-current-at-splunk-com   # 10.x images, ignored by 9.x
+      # SPLUNK_START_ARGS: --accept-license
       SPLUNK_PASSWORD: ${SPLUNK_PASSWORD}
       SPLUNKBASE_USERNAME: ${SPLUNKBASE_USERNAME}
       SPLUNKBASE_PASSWORD: ${SPLUNKBASE_PASSWORD}
@@ -51,7 +52,8 @@ Notes:
   Splunkbase tracks compatibility as major.minor, so `10.6.1.1` is treated as 10.6.
 - `SPLUNK_START_ARGS: --accept-license` is required on every container. From 10.x
   images `SPLUNK_GENERAL_TERMS: --accept-sgt-current-at-splunk-com` is required
-  too. Accepting is the user's decision; do not add it silently.
+  too. Accepting is the user's decision: do not add these lines unless they have
+  said they accept, and tell them the container will not start without them.
 - Re-run the script when upgrading; the URLs pin exact versions.
 - To see what has moved since, run `python3 scripts/splunkbase_urls.py --check .env`
   (add `--splunk-version`, or point it at the compose file so it reads the `image:`
