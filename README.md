@@ -62,6 +62,10 @@ shellcheck scripts/get_splunkbase_urls.sh
 2. Merge to `main`, then `git tag v2.1.0 && git push origin v2.1.0`.
 3. The release workflow checks the tag matches `SKILL.md`, runs the tests, builds `splunkbase-skill.skill` from `git archive` (files marked `export-ignore` in `.gitattributes` are left out) and publishes the release with the changelog notes.
 
+## Disclaimer & Support
+
+This is a personal project. It is not an official Splunk or Cisco product, is not endorsed by Cisco or Splunk, and is not covered by Cisco TAC, Splunk Support or any commercial support agreement or SLA. Use it at your own risk, test it in a non-production environment first, and open a GitHub issue for questions or bugs (best effort). Details in [SUPPORT.md](SUPPORT.md).
+
 ## License
 
-[Apache-2.0](LICENSE).
+Copyright 2026 Dominique Dessy. Licensed under the [Apache License, Version 2.0](LICENSE); distributed "as is", without warranties or conditions of any kind.
