@@ -149,6 +149,10 @@ Answer shape for each app: ID and title, resolved version, `compatibility`
 - If the network is blocked, say so and ask the user to run the command.
   Do not fall back to remembered versions.
 - Downloading a URL needs a Splunkbase account; say so when handing URLs over.
+- Licence and terms acceptance (`SPLUNK_START_ARGS: --accept-license`, and
+  `SPLUNK_GENERAL_TERMS` on 10.x) is the user's decision. When writing a compose
+  file or `.env`, leave those lines out unless the user has said they accept,
+  and tell them the container will not start without them.
 
 ## Examples
 
